@@ -53,33 +53,45 @@ def build_context(ha: HAReader, settings: Settings, now: datetime | None = None)
     weather_history, _ = _read_history(ha, WEATHER_ENTITY, start, now, missing)
     sessions = extract_watering_sessions(history, now)
     stats: dict[str, float | None] = {}
+    states: dict[str, dict[str, Any] | None] = {}
     for field, entity_id in STATE_ENTITIES.items():
         raw = _read_state(ha, entity_id, missing)
+        states[field] = raw
         stats[field] = _numeric_state(raw, entity_id, missing)
 
-    today_minutes = stats["today_watering_minutes"]
-    if today_minutes is not None:
-        unit = str(_attributes(_read_state(ha, STATE_ENTITIES["today_watering_minutes"], missing)).get("unit_of_measurement", "")).lower()
-        if unit in {"s", "sec", "second", "seconds"}:
-            today_minutes /= 60
-        elif unit in {"h", "hr", "hour", "hours"}:
-            today_minutes *= 60
-        elif unit not in {"min", "minute", "minutes"}:
-            missing.append("unit sensor.hydrofoor_inschakelduur_vandaag (daglimiet)")
-            today_minutes = None
+    today_minutes = _duration_minutes(
+        stats["today_watering_minutes"],
+        states["today_watering_minutes"],
+        STATE_ENTITIES["today_watering_minutes"],
+        missing,
+    )
+    stats["watering_minutes_week"] = _duration_minutes(
+        stats["watering_minutes_week"],
+        states["watering_minutes_week"],
+        STATE_ENTITIES["watering_minutes_week"],
+        missing,
+    )
 
     forecast = _get_forecast(ha, missing)
     current_weather = _weather_values(weather_state)
     weather_observations = _weather_observations(weather_history)
     forecast_items = _forecast_items(forecast, now, missing)
     current_price = None
+    price_state = None
     if settings.ha_price_entity_id:
         price_state = _read_state(ha, settings.ha_price_entity_id, missing)
         current_price = _numeric_state(price_state, settings.ha_price_entity_id, missing)
     else:
         missing.append("HA_PRICE_ENTITY_ID (actuele elektriciteitsprijs)")
 
-    future_prices = _future_prices(ha, settings.ha_price_forecast_entity_id, now, missing)
+    future_price_state = price_state if settings.ha_price_forecast_entity_id == settings.ha_price_entity_id else None
+    future_prices = _future_prices(
+        ha,
+        settings.ha_price_forecast_entity_id,
+        now,
+        missing,
+        state=future_price_state,
+    )
     missing.append("totale neerslag laatste 12 uur (geen betrouwbare aggregatie beschikbaar)")
 
     return IrrigationContext(
@@ -143,6 +155,20 @@ def _numeric_state(state: dict[str, Any] | None, entity_id: str, missing: list[s
     return value
 
 
+def _duration_minutes(value: float | None, state: dict[str, Any] | None, entity_id: str, missing: list[str]) -> float | None:
+    if value is None:
+        return None
+    unit = str(_attributes(state).get("unit_of_measurement", "")).strip().lower()
+    if unit in {"s", "sec", "second", "seconds"}:
+        return value / 60
+    if unit in {"h", "hr", "hour", "hours"}:
+        return value * 60
+    if unit in {"min", "minute", "minutes"}:
+        return value
+    missing.append(f"unit {entity_id} (duur in minuten)")
+    return None
+
+
 def _weather_values(state: dict[str, Any] | None) -> dict[str, object | None]:
     attributes = _attributes(state)
     return {
@@ -203,11 +229,18 @@ def _forecast_items(forecast: dict[str, Any], now: datetime, missing: list[str])
     return result
 
 
-def _future_prices(ha: HAReader, entity_id: str | None, now: datetime, missing: list[str]) -> list[dict[str, object | None]]:
+def _future_prices(
+    ha: HAReader,
+    entity_id: str | None,
+    now: datetime,
+    missing: list[str],
+    state: dict[str, Any] | None = None,
+) -> list[dict[str, object | None]]:
     if not entity_id:
         missing.append("HA_PRICE_FORECAST_ENTITY_ID (toekomstige elektriciteitsprijzen)")
         return []
-    state = _read_state(ha, entity_id, missing)
+    if state is None:
+        state = _read_state(ha, entity_id, missing)
     attributes = _attributes(state)
     values = attributes.get("prices", attributes.get("forecast"))
     if not isinstance(values, list):
@@ -217,7 +250,7 @@ def _future_prices(ha: HAReader, entity_id: str | None, now: datetime, missing: 
     limit = now + timedelta(hours=FORECAST_HOURS)
     for value in values:
         if isinstance(value, dict):
-            raw_datetime = value.get("datetime", value.get("start", value.get("time")))
+            raw_datetime = value.get("datetime", value.get("from", value.get("start", value.get("time"))))
             try:
                 price_time = datetime.fromisoformat(raw_datetime) if isinstance(raw_datetime, str) else None
             except ValueError:
@@ -230,6 +263,7 @@ def _future_prices(ha: HAReader, entity_id: str | None, now: datetime, missing: 
             result.append(
                 {
                     "datetime": raw_datetime,
+                    "valid_until": value.get("till", value.get("end")),
                     "price_eur_kwh": value.get("price", value.get("value")),
                 }
             )

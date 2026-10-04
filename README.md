@@ -41,7 +41,7 @@ HA_PRICE_ENTITY_ID=sensor.jouw_actuele_prijs
 HA_PRICE_FORECAST_ENTITY_ID=sensor.jouw_prijsverwachting
 ```
 
-De prijsverwachting wordt gelezen uit de `prices`- of `forecast`-state-attributen wanneer die een lijst met prijsrecords bevatten. Ontbrekende of niet herkenbare data wordt als ontbrekend doorgegeven, niet ingevuld.
+`HA_PRICE_ENTITY_ID` levert de actuele prijs uit de state-waarde. `HA_PRICE_FORECAST_ENTITY_ID` levert toekomstige prijzen uit een lijst in de state-attributen. Dat mag dezelfde entity zijn wanneer die beide bevat: de Frank Energie-entity hierboven heeft een actuele state en een `prices`-lijst met records (`from`, `price`, `till`). De applicatie leest dan de huidige prijs en filtert de lijst op de komende 12 uur. Ontbrekende of niet herkenbare data wordt als ontbrekend doorgegeven, niet ingevuld.
 
 ## Dry run
 
