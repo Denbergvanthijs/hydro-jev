@@ -34,7 +34,7 @@ class Settings:
         load_dotenv()
         sowing_date = date.fromisoformat(os.getenv("LAWN_SOWING_DATE", "2026-09-26"))
         return cls(
-            ha_url=os.getenv("HA_URL", "http://192.168.1.101:8123").rstrip("/"),
+            ha_url=os.getenv("HA_URL", "http://192.168.1.101").rstrip("/"),
             ha_token=os.getenv("HA_TOKEN", ""),
             typesafe_api_key=os.getenv("TYPESAFE_API_KEY", ""),
             lawn_sowing_date=sowing_date,

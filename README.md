@@ -23,7 +23,7 @@ Selecteer daarna in VS Code de interpreter van de `hydro-jev` Conda-omgeving.
 Vul `.env` lokaal in. Dit bestand staat op de ignore-lijst en mag nooit worden gecommit.
 
 ```dotenv
-HA_URL=http://192.168.1.101:8123
+HA_URL=http://192.168.1.101
 HA_TOKEN=je_home_assistant_long_lived_access_token
 TYPESAFE_API_KEY=je_typesafe_api_key
 LAWN_SOWING_DATE=2026-09-26
