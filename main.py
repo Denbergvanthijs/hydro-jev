@@ -40,7 +40,10 @@ def main() -> None:
     ha = HomeAssistantClient(settings.ha_url, settings.ha_token)
     with _log_step("Home Assistant-context ophalen en opbouwen"):
         context = build_context(ha, settings)
-    logger.info("Context: %s", json.dumps(context.model_dump(mode="json"), ensure_ascii=True))
+    logger.info(
+        "HA-context:\n%s",
+        json.dumps(context.model_dump(mode="json"), ensure_ascii=False, indent=2),
+    )
 
     try:
         with _log_step("Jev-beslissing opvragen"):
@@ -77,7 +80,8 @@ def main() -> None:
                     "dry_run": settings.dry_run,
                     "pump_activated": False,
                 },
-                ensure_ascii=True,
+                ensure_ascii=False,
+                indent=2,
             )
         )
     logger.info("Hydro-Jev afgerond (totale duur %.2f s)", perf_counter() - run_started)
