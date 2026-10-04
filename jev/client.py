@@ -29,7 +29,6 @@ class JevResponse(SystemOneResponse):
 def request_decision(context: IrrigationContext, api_key: str) -> IrrigationDecision:
     with TypeSafeClient(
         api_key=api_key,
-        model="jev",
     ) as client:
         result = client.system_one(
             state=context.model_dump(mode="json"),

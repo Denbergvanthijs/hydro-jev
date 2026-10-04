@@ -32,7 +32,7 @@ DRY_RUN=true
 
 Maak in Home Assistant een Long-Lived Access Token aan via je gebruikersprofiel. De token wordt alleen als `Authorization: Bearer ...` gebruikt en wordt niet gelogd.
 
-Maak een API key aan bij TypeSafe en zet die in `TYPESAFE_API_KEY`. De officiële SDK gebruikt die key voor TypeSafe's eigen API en vraagt Jev op met model `jev`.
+Maak een API key aan bij TypeSafe en zet die in `TYPESAFE_API_KEY`. De officiële SDK gebruikt die key voor TypeSafe's eigen API. Zonder modeloverride kiest de SDK het gedocumenteerde standaardmodel `jev-latest`.
 
 De projectbeschrijving bevat geen entity-ID’s voor elektriciteitsprijzen. Als je die in HA hebt, configureer ze in `.env`:
 
