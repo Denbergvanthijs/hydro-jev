@@ -97,8 +97,6 @@ def build_context(ha: HAReader, settings: Settings, now: datetime | None = None)
         missing,
         state=future_price_state,
     )
-    missing.append("totale neerslag laatste 12 uur (geen betrouwbare aggregatie beschikbaar)")
-
     return IrrigationContext(
         observed_at=now.isoformat(),
         lawn={
@@ -110,7 +108,6 @@ def build_context(ha: HAReader, settings: Settings, now: datetime | None = None)
         current_weather=current_weather,
         weather_observations_last_12h=weather_observations,
         forecast_next_12h=forecast_items,
-        recent_rainfall_mm=None,
         watering_sessions_last_12h=[
             {
                 **item.model_dump(mode="json"),

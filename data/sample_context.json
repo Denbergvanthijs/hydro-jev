@@ -13,11 +13,10 @@
         "dew_point": null,
         "cloud_coverage": null,
         "uv_index": null,
-        "wind_speed": null,
+        "wind_speed": null
     },
     "weather_observations_last_12h": [],
     "forecast_next_12h": [],
-    "recent_rainfall_mm": null,
     "watering_sessions_last_12h": [],
     "pump_state": null,
     "today_watering_minutes": null,
@@ -32,7 +31,6 @@
     "future_electricity_prices": [],
     "missing_data": [
         "HA_PRICE_ENTITY_ID (actuele elektriciteitsprijs)",
-        "HA_PRICE_FORECAST_ENTITY_ID (toekomstige elektriciteitsprijzen)",
-        "neerslaggeschiedenis (geen betrouwbare regenmeter/waarnemingen)"
+        "HA_PRICE_FORECAST_ENTITY_ID (toekomstige elektriciteitsprijzen)"
     ]
 }

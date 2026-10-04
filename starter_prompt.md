@@ -127,7 +127,6 @@ Jev moet, indien beschikbaar, informatie krijgen over:
 - huidige temperatuur
 - luchtvochtigheid
 - actuele neerslag
-- neerslag in de afgelopen 12 uur
 - verwachte neerslag in de komende 12 uur
 - temperaturen in de komende 12 uur
 - overige beschikbare relevante weersinformatie

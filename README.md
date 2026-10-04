@@ -76,6 +76,3 @@ De tests gebruiken fakes en fixtures; ze verbinden niet met Home Assistant of Ty
 - De enige uitvoer is een advies; pompbediening is niet geïmplementeerd.
 - Geheimen komen niet in logs. Logs bevatten wel de context, Jev-kans, droogtescore, veiligheidsinterventie en uiteindelijke dry-run-uitkomst.
 
-## Projectstructuur
-
-De actuele regenhistorie wordt niet als een opgetelde millimeterwaarde verzonnen: deze versie stuurt HA-weatherhistorie en beschikbare neerslagobservaties door, en houdt `recent_rainfall_mm` expliciet leeg zolang er geen betrouwbare bron/aggregatie is.

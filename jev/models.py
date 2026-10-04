@@ -11,7 +11,6 @@ class IrrigationContext(BaseModel):
     current_weather: dict[str, object | None]
     weather_observations_last_12h: list[dict[str, object | None]]
     forecast_next_12h: list[dict[str, object | None]]
-    recent_rainfall_mm: float | None = None
     watering_sessions_last_12h: list[dict[str, object | None]]
     pump_state: str | None = None
     today_watering_minutes: float | None = None

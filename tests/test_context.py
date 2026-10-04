@@ -44,7 +44,6 @@ def test_context_is_built_with_missing_home_assistant_data() -> None:
     assert "precipitation_unit" not in context.current_weather
     assert context.today_watering_minutes is None
     assert "history switch.athom_stekker_kantoor_switch" in context.missing_data
-    assert context.recent_rainfall_mm is None
     assert "watering_sessions_reliable" not in context.model_dump()
     assert "pump_current_a" not in context.model_dump()
 
