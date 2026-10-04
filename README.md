@@ -51,6 +51,14 @@ Start de applicatie vanuit de projectmap:
 python main.py
 ```
 
+Standaard gebruikt dit de live Home Assistant-data. Om de meegeleverde context uit `data/sample_context.json` te gebruiken zonder verbinding met HA:
+
+```powershell
+python main.py --source sample
+```
+
+Beide routes gebruiken dezelfde Jev- en safety-stappen. De sample-route heeft geen `HA_TOKEN` nodig, maar vraagt nog wel een `TYPESAFE_API_KEY` om Jev echt aan te roepen. Je kunt een ander contextbestand kiezen met `--sample-file pad\naar\context.json`. Dezelfde functies zijn ook vanuit Python te gebruiken: `run_with_home_assistant(...)`, `run_with_sample_json(...)` en `run_context(...)` in `main.py`.
+
 De run haalt states en 12 uur HA-history op, vraagt met de officiële Home Assistant REST API de beschikbare uurlijkse weerforecast op, bouwt een gestructureerde context, roept Jev aan en past de lokale safety-laag toe. De forecast-opvraag is uitsluitend data ophalen. Er wordt nooit een Home Assistant-pompservice aangeroepen, ook niet wanneer `DRY_RUN` handmatig op `false` is gezet. De standaard blijft `DRY_RUN=true`.
 
 De beslissing verschijnt als JSON op het scherm en in de logs. Ontbrekende sensoren en API-data worden vermeld. Zonder betrouwbare dagelijkse sproeiduur blokkeert de safety-laag een positief sproeiadvies, omdat de daglimiet anders niet te controleren is.
