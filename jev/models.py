@@ -13,7 +13,6 @@ class IrrigationContext(BaseModel):
     forecast_next_12h: list[dict[str, object | None]]
     recent_rainfall_mm: float | None = None
     watering_sessions_last_12h: list[dict[str, object | None]]
-    watering_sessions_reliable: bool
     pump_state: str | None = None
     today_watering_minutes: float | None = None
     watering_events_today: float | None = None
@@ -21,7 +20,6 @@ class IrrigationContext(BaseModel):
     watering_minutes_week: float | None = None
     energy_kwh_today: float | None = None
     energy_kwh_week: float | None = None
-    pump_current_a: float | None = None
     pump_power_w: float | None = None
     cumulative_energy_kwh: float | None = None
     current_electricity_price_eur_kwh: float | None = None

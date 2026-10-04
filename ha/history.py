@@ -39,7 +39,7 @@ def extract_watering_sessions(history: list[list[dict[str, Any]]], now: datetime
                     )
                 )
             else:
-                duration = (changed_at - active_since).total_seconds() / 60
+                duration = round((changed_at - active_since).total_seconds() / 60, 2)
                 sessions.append(
                     WateringSession(
                         start_time=active_since,

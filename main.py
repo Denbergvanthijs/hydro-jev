@@ -48,24 +48,21 @@ def main() -> None:
     try:
         with _log_step("Jev-beslissing opvragen"):
             decision: IrrigationDecision | None = request_decision(context, settings.typesafe_api_key)
-        reason = "Jev-beslissing op basis van de verstrekte context."
     except Exception as error:
         logger.error("Jev-aanroep mislukt; veilig niet sproeien (%s).", type(error).__name__)
         decision = None
-        reason = "Jev-beslissing ontbreekt of kon niet gevalideerd worden."
 
     with _log_step("veiligheidscontroles uitvoeren"):
         safety = apply_safety(decision, context.today_watering_minutes, WATERING_MINUTES)
     dryness = decision.dryness_score if decision else None
     probability = decision.probability if decision else None
     logger.info(
-        "Besluit: jev_sproeien_nu=%s probability=%s droogte_score=%s reden=%s "
+        "Besluit: jev_sproeien_nu=%s probability=%s droogte_score=%s "
         "veiligheidsinterventie=%s safety_goedgekeurd=%s duur_minuten=%s dry_run=%s "
         "pomp_geactiveerd=false",
         decision.sproeien_nu if decision else False,
         probability,
         dryness,
-        reason,
         safety.intervention,
         safety.approved,
         safety.minutes,

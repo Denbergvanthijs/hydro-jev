@@ -37,10 +37,16 @@ def test_context_is_built_with_missing_home_assistant_data() -> None:
     context = build_context(IncompleteHA(), settings, now)
 
     assert context.current_weather["condition"] == "sunny"
+    assert "precipitation" not in context.current_weather
+    assert "apparent_temperature" not in context.current_weather
+    assert "wind_gust_speed" not in context.current_weather
+    assert "temperature_unit" not in context.current_weather
+    assert "precipitation_unit" not in context.current_weather
     assert context.today_watering_minutes is None
-    assert not context.watering_sessions_reliable
     assert "history switch.athom_stekker_kantoor_switch" in context.missing_data
     assert context.recent_rainfall_mm is None
+    assert "watering_sessions_reliable" not in context.model_dump()
+    assert "pump_current_a" not in context.model_dump()
 
 
 class FrankPriceHA(IncompleteHA):
@@ -76,6 +82,13 @@ class FrankPriceHA(IncompleteHA):
             self.duration_state_reads += 1
             value = "0.26" if entity_id.endswith("vandaag") else "1.24"
             return {"state": value, "attributes": {"unit_of_measurement": "h"}}
+        energy_values = {
+            "sensor.athom_stekker_kantoor_energy": "0.876739",
+            "sensor.hydrofoor_verbruik_vandaag": "0.213601",
+            "sensor.hydrofoor_verbruik_deze_week": "0.497557",
+        }
+        if entity_id in energy_values:
+            return {"state": energy_values[entity_id], "attributes": {"unit_of_measurement": "kWh"}}
         return super().get_state(entity_id)
 
 
@@ -94,9 +107,13 @@ def test_same_frank_entity_provides_current_and_future_prices() -> None:
 
     context = build_context(ha, settings, now)
 
-    assert context.current_electricity_price_eur_kwh == 0.41331
+    assert context.current_electricity_price_eur_kwh == 0.413
     assert context.today_watering_minutes == pytest.approx(15.6)
     assert context.watering_minutes_week == pytest.approx(74.4)
+    assert context.cumulative_energy_kwh == 0.877
+    assert context.energy_kwh_today == 0.214
+    assert context.energy_kwh_week == 0.498
+    assert "pump_current_a" not in context.model_dump()
     assert context.future_electricity_prices == [
         {
             "datetime": "2026-10-04T13:00:00+02:00",

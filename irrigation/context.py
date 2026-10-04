@@ -11,7 +11,6 @@ from jev.models import IrrigationContext
 PUMP_ENTITY = "switch.athom_stekker_kantoor_switch"
 WEATHER_ENTITY = "weather.forecast_home"
 STATE_ENTITIES = {
-    "pump_current_a": "sensor.athom_stekker_kantoor_current",
     "pump_power_w": "sensor.athom_stekker_kantoor_power",
     "cumulative_energy_kwh": "sensor.athom_stekker_kantoor_energy",
     "watering_events_today": "sensor.hydrofoor_inschakelingen_vandaag",
@@ -24,14 +23,12 @@ STATE_ENTITIES = {
 WEATHER_FIELDS = (
     "temperature",
     "humidity",
-    "precipitation",
-    "apparent_temperature",
     "dew_point",
     "cloud_coverage",
     "uv_index",
     "wind_speed",
-    "wind_gust_speed",
 )
+KWH_FIELDS = {"cumulative_energy_kwh", "energy_kwh_today", "energy_kwh_week"}
 
 
 class HAReader(Protocol):
@@ -49,7 +46,7 @@ def build_context(ha: HAReader, settings: Settings, now: datetime | None = None)
 
     pump_state = _read_state(ha, PUMP_ENTITY, missing)
     weather_state = _read_state(ha, WEATHER_ENTITY, missing)
-    history, pump_history_available = _read_history(ha, PUMP_ENTITY, start, now, missing)
+    history, _ = _read_history(ha, PUMP_ENTITY, start, now, missing)
     weather_history, _ = _read_history(ha, WEATHER_ENTITY, start, now, missing)
     sessions = extract_watering_sessions(history, now)
     stats: dict[str, float | None] = {}
@@ -71,6 +68,14 @@ def build_context(ha: HAReader, settings: Settings, now: datetime | None = None)
         STATE_ENTITIES["watering_minutes_week"],
         missing,
     )
+    if stats["watering_minutes_week"] is not None:
+        stats["watering_minutes_week"] = round(stats["watering_minutes_week"], 2)
+    if today_minutes is not None:
+        today_minutes = round(today_minutes, 2)
+    for field in KWH_FIELDS:
+        value = stats[field]
+        if value is not None:
+            stats[field] = round(value, 3)
 
     forecast = _get_forecast(ha, missing)
     current_weather = _weather_values(weather_state)
@@ -106,14 +111,19 @@ def build_context(ha: HAReader, settings: Settings, now: datetime | None = None)
         weather_observations_last_12h=weather_observations,
         forecast_next_12h=forecast_items,
         recent_rainfall_mm=None,
-        watering_sessions_last_12h=[item.model_dump(mode="json") for item in sessions],
-        watering_sessions_reliable=pump_history_available and all(item.reliable for item in sessions),
+        watering_sessions_last_12h=[
+            {
+                **item.model_dump(mode="json"),
+                "duration_minutes": round(item.duration_minutes, 2) if item.duration_minutes is not None else None,
+            }
+            for item in sessions
+        ],
         pump_state=str(pump_state.get("state")) if pump_state else None,
         today_watering_minutes=today_minutes,
-        current_electricity_price_eur_kwh=current_price,
+        current_electricity_price_eur_kwh=round(current_price, 3) if current_price is not None else None,
         future_electricity_prices=future_prices,
         missing_data=sorted(set(missing)),
-        **{key: value for key, value in stats.items() if key != "today_watering_minutes"},
+        **{key: value for key, value in stats.items() if key not in {"today_watering_minutes", "pump_current_a"}},
     )
 
 
@@ -174,8 +184,6 @@ def _weather_values(state: dict[str, Any] | None) -> dict[str, object | None]:
     return {
         "condition": state.get("state") if state else None,
         **{field: attributes.get(field) for field in WEATHER_FIELDS},
-        "temperature_unit": attributes.get("temperature_unit"),
-        "precipitation_unit": attributes.get("precipitation_unit"),
     }
 
 
@@ -264,7 +272,15 @@ def _future_prices(
                 {
                     "datetime": raw_datetime,
                     "valid_until": value.get("till", value.get("end")),
-                    "price_eur_kwh": value.get("price", value.get("value")),
+                    "price_eur_kwh": _round_optional(value.get("price", value.get("value")), 3),
                 }
             )
     return result
+
+
+def _round_optional(value: Any, digits: int) -> float | None:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return round(number, digits) if math.isfinite(number) else None

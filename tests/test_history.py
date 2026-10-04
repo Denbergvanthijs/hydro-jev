@@ -39,3 +39,19 @@ def test_missing_transition_timestamp_is_reported_as_unreliable() -> None:
     assert len(sessions) == 1
     assert sessions[0].start_time is None
     assert not sessions[0].reliable
+
+
+def test_short_manual_session_is_kept_and_duration_rounded() -> None:
+    sessions = extract_watering_sessions(
+        [
+            [
+                {"state": "on", "last_changed": "2026-10-04T11:56:51.000000+02:00"},
+                {"state": "off", "last_changed": "2026-10-04T11:57:12.634078+02:00"},
+            ]
+        ],
+        datetime.fromisoformat("2026-10-04T12:00:00+02:00"),
+    )
+
+    assert len(sessions) == 1
+    assert sessions[0].duration_minutes == 0.36
+    assert sessions[0].reliable
