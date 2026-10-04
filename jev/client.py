@@ -67,11 +67,7 @@ def request_decision(context: IrrigationContext, api_key: str) -> IrrigationDeci
                 response_model=JevResponse,
             )
     except Exception as error:
-        logger.error(
-            "TypeSafe-verzoek mislukt na %.2f s (%s)",
-            perf_counter() - started,
-            type(error).__name__,
-        )
+        logger.error(f"TypeSafe-verzoek mislukt na {perf_counter() - started:.2f} s ({type(error).__name__})")
         raise
 
     choice = result.sproeien_nu.choice
@@ -82,5 +78,5 @@ def request_decision(context: IrrigationContext, api_key: str) -> IrrigationDeci
         probability=result.sproeien_nu.probabilities["sproeien"],
         dryness_score=result.droogte_inschatting.score,
     )
-    logger.info("TypeSafe-verzoek gereed (%.2f s)", perf_counter() - started)
+    logger.info(f"TypeSafe-verzoek gereed ({perf_counter() - started:.2f} s)")
     return decision

@@ -13,25 +13,14 @@ logger = logging.getLogger("hydro_jev.ha")
 @contextmanager
 def _log_request(operation: str, entity_id: str):
     started = perf_counter()
-    logger.info("HA-call gestart: %s entity=%s", operation, entity_id)
+    logger.info(f"HA-call gestart: {operation} entity={entity_id}")
     try:
         yield
     except Exception as error:
-        logger.error(
-            "HA-call mislukt: %s entity=%s na %.2f s (%s)",
-            operation,
-            entity_id,
-            perf_counter() - started,
-            type(error).__name__,
-        )
+        logger.error(f"HA-call mislukt: {operation} entity={entity_id} na {perf_counter() - started:.2f} s ({type(error).__name__})")
         raise
     else:
-        logger.info(
-            "HA-call gereed: %s entity=%s (%.2f s)",
-            operation,
-            entity_id,
-            perf_counter() - started,
-        )
+        logger.info(f"HA-call gereed: {operation} entity={entity_id} ({perf_counter() - started:.2f} s)")
 
 
 class HomeAssistantClient:

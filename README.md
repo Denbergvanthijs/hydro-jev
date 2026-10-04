@@ -83,4 +83,3 @@ De tests gebruiken fakes en fixtures; ze verbinden niet met Home Assistant of Ty
 - Een ongeldige sproeiduur, onbetrouwbare dagelijkse sproeiduur of overschrijding van de daglimiet blokkeert het advies.
 - De enige uitvoer is een advies; pompbediening is niet geïmplementeerd.
 - Geheimen komen niet in logs. Logs bevatten wel de context, Jev-kans, droogtescore, veiligheidsinterventie en uiteindelijke dry-run-uitkomst.
-
