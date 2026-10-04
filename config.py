@@ -1,8 +1,7 @@
-from __future__ import annotations
-
 import os
 from dataclasses import dataclass
 from datetime import date
+from typing import Self
 
 from dotenv import load_dotenv
 
@@ -30,7 +29,7 @@ class Settings:
     ha_price_forecast_entity_id: str | None = None
 
     @classmethod
-    def from_environment(cls) -> Settings:
+    def from_environment(cls) -> Self:
         load_dotenv()
         sowing_date = date.fromisoformat(os.getenv("LAWN_SOWING_DATE", "2026-09-26"))
         return cls(
