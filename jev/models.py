@@ -5,11 +5,13 @@ class IrrigationContext(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     observed_at: str
+    history_hours: int
+    forecast_hours: int
     lawn: dict[str, int | float | str]
     current_weather: dict[str, object | None]
-    weather_observations_last_12h: list[dict[str, object | None]]
-    forecast_next_12h: list[dict[str, object | None]]
-    watering_sessions_last_12h: list[dict[str, object | None]]
+    weather_observations: list[dict[str, object | None]]
+    weather_forecast: list[dict[str, object | None]]
+    watering_sessions: list[dict[str, object | None]]
     pump_state: str | None = None
     today_watering_minutes: float | None = None
     watering_events_today: float | None = None

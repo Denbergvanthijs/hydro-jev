@@ -2,7 +2,7 @@ import math
 from datetime import datetime, timedelta
 from typing import Any, Protocol
 
-from config import FORECAST_HOURS, HISTORY_HOURS, Settings
+from config import Settings
 from ha.history import extract_watering_sessions
 from jev.models import IrrigationContext
 
@@ -39,7 +39,7 @@ class HAReader(Protocol):
 
 def build_context(ha: HAReader, settings: Settings, now: datetime | None = None) -> IrrigationContext:
     now = now or datetime.now().astimezone()
-    start = now - timedelta(hours=HISTORY_HOURS)
+    start = now - timedelta(hours=settings.history_hours)
     missing: list[str] = []
 
     pump_state = _read_state(ha, PUMP_ENTITY, missing)
@@ -78,7 +78,7 @@ def build_context(ha: HAReader, settings: Settings, now: datetime | None = None)
     forecast = _get_forecast(ha, missing)
     current_weather = _weather_values(weather_state)
     weather_observations = _weather_observations(weather_history)
-    forecast_items = _forecast_items(forecast, now, missing)
+    forecast_items = _forecast_items(forecast, now, missing, settings.forecast_hours)
     current_price = None
     price_state = None
     if settings.ha_price_entity_id:
@@ -94,9 +94,12 @@ def build_context(ha: HAReader, settings: Settings, now: datetime | None = None)
         now,
         missing,
         state=future_price_state,
+        forecast_hours=settings.forecast_hours,
     )
     return IrrigationContext(
         observed_at=now.isoformat(),
+        history_hours=settings.history_hours,
+        forecast_hours=settings.forecast_hours,
         lawn={
             "area_m2": 45,
             "sprinkler_count": 2,
@@ -104,9 +107,9 @@ def build_context(ha: HAReader, settings: Settings, now: datetime | None = None)
             "age_days": max((now.date() - settings.lawn_sowing_date).days, 0),
         },
         current_weather=current_weather,
-        weather_observations_last_12h=weather_observations,
-        forecast_next_12h=forecast_items,
-        watering_sessions_last_12h=[
+        weather_observations=weather_observations,
+        weather_forecast=forecast_items,
+        watering_sessions=[
             {
                 **item.model_dump(mode="json"),
                 "duration_minutes": round(item.duration_minutes, 2) if item.duration_minutes is not None else None,
@@ -206,13 +209,13 @@ def _get_forecast(ha: HAReader, missing: list[str]) -> dict[str, Any]:
         return {}
 
 
-def _forecast_items(forecast: dict[str, Any], now: datetime, missing: list[str]) -> list[dict[str, object | None]]:
+def _forecast_items(forecast: dict[str, Any], now: datetime, missing: list[str], forecast_hours: int) -> list[dict[str, object | None]]:
     response = forecast.get("service_response", forecast)
     entity_data = response.get(WEATHER_ENTITY) if isinstance(response, dict) else None
     rows = entity_data.get("forecast") if isinstance(entity_data, dict) else None
     if not isinstance(rows, list):
         return []
-    limit = now + timedelta(hours=FORECAST_HOURS)
+    limit = now + timedelta(hours=forecast_hours)
     result: list[dict[str, object | None]] = []
     fields = ("datetime", "condition", *WEATHER_FIELDS)
     for row in rows:
@@ -238,6 +241,7 @@ def _future_prices(
     now: datetime,
     missing: list[str],
     state: dict[str, Any] | None = None,
+    forecast_hours: int = 12,
 ) -> list[dict[str, object | None]]:
     if not entity_id:
         missing.append("HA_PRICE_FORECAST_ENTITY_ID (toekomstige elektriciteitsprijzen)")
@@ -250,7 +254,7 @@ def _future_prices(
         missing.append(f"bruikbare prijsverwachting {entity_id}")
         return []
     result: list[dict[str, object | None]] = []
-    limit = now + timedelta(hours=FORECAST_HOURS)
+    limit = now + timedelta(hours=forecast_hours)
     for value in values:
         if isinstance(value, dict):
             raw_datetime = value.get("datetime", value.get("from", value.get("start", value.get("time"))))
