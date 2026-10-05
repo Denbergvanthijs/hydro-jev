@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 import pytest
 
@@ -46,6 +46,34 @@ def test_context_is_built_with_missing_home_assistant_data() -> None:
     assert "history switch.athom_stekker_kantoor_switch" in context.missing_data
     assert "watering_sessions_reliable" not in context.model_dump()
     assert "pump_current_a" not in context.model_dump()
+
+
+def test_context_labels_configured_history_window() -> None:
+    class HistoryTrackingHA(IncompleteHA):
+        def __init__(self) -> None:
+            self.history_requests: list[tuple[datetime, datetime]] = []
+
+        def get_history(self, entity_id: str, start: datetime, end: datetime) -> list[list[dict[str, object]]]:
+            self.history_requests.append((start, end))
+            return []
+
+    settings = Settings(
+        ha_url="http://ha.local:8123",
+        ha_token="",
+        typesafe_api_key="",
+        lawn_sowing_date=date(2026, 9, 26),
+        dry_run=True,
+        history_hours=24,
+    )
+    ha = HistoryTrackingHA()
+    now = datetime.fromisoformat("2026-10-04T12:00:00+02:00")
+
+    context = build_context(ha, settings, now)
+
+    assert context.history_hours == 24
+    assert context.weather_observations == []
+    assert context.watering_sessions == []
+    assert ha.history_requests == [(now - timedelta(hours=24), now)] * 2
 
 
 class FrankPriceHA(IncompleteHA):

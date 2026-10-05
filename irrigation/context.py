@@ -98,6 +98,7 @@ def build_context(ha: HAReader, settings: Settings, now: datetime | None = None)
     )
     return IrrigationContext(
         observed_at=now.isoformat(),
+        history_hours=settings.history_hours,
         lawn={
             "area_m2": 45,
             "sprinkler_count": 2,
@@ -105,9 +106,9 @@ def build_context(ha: HAReader, settings: Settings, now: datetime | None = None)
             "age_days": max((now.date() - settings.lawn_sowing_date).days, 0),
         },
         current_weather=current_weather,
-        weather_observations_last_12h=weather_observations,
+        weather_observations=weather_observations,
         forecast_next_12h=forecast_items,
-        watering_sessions_last_12h=[
+        watering_sessions=[
             {
                 **item.model_dump(mode="json"),
                 "duration_minutes": round(item.duration_minutes, 2) if item.duration_minutes is not None else None,
