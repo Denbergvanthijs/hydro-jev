@@ -9,9 +9,12 @@ target-version = "py312"
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
+    "ANN401",
     "BLE001",
     "COM812",
     "CPY001",
+    "D203",
+    "D212",
     "EM101",
     "EM102",
     "ISC001",
@@ -19,9 +22,13 @@ ignore = [
     "PLR0917",
     "TRY003",
     "TRY400",
-    "ANN401",
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["ANN", "ARG", "D", "FBT", "INP001", "PLR2004", "S101", "S106"]
 "main.py" = ["T201"]
+
+# Broad exception handling preserves safe fallbacks for external service failures.
+# Avoid rendering raw exception messages in logs, which may contain sensitive request data.
+# Payload parsing uses dynamic JSON data, and several parser arguments represent independent inputs.
+# Formatter-managed rules and incompatible docstring variants are intentionally excluded.
