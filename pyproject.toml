@@ -7,4 +7,5 @@ line-length = 140
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B"]
+select = ["ALL"]
+ignore = ["COM812", "ISC001"]
