@@ -1,3 +1,5 @@
+"""Application settings loaded from environment variables."""
+
 from datetime import date
 
 from pydantic import field_validator
@@ -5,6 +7,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    """Validated runtime configuration for the irrigation application."""
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore", frozen=True)
 
     ha_url: str = "http://192.168.1.101"

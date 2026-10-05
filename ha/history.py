@@ -1,3 +1,5 @@
+"""Interpret Home Assistant history records as watering sessions."""
+
 from datetime import datetime
 from typing import Any
 
@@ -5,6 +7,8 @@ from pydantic import BaseModel
 
 
 class WateringSession(BaseModel):
+    """A watering session derived from pump state transitions."""
+
     start_time: datetime | None
     end_time: datetime | None
     duration_minutes: float | None
@@ -13,6 +17,7 @@ class WateringSession(BaseModel):
 
 
 def extract_watering_sessions(history: list[list[dict[str, Any]]], now: datetime) -> list[WateringSession]:
+    """Extract completed and incomplete sessions from grouped history records."""
     records = [record for group in history for record in group]
     records.sort(key=lambda record: _timestamp(record) or now)
     sessions: list[WateringSession] = []

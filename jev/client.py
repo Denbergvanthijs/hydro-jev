@@ -1,3 +1,5 @@
+"""Request and validate irrigation decisions from the TypeSafe service."""
+
 import logging
 from time import perf_counter
 
@@ -17,6 +19,8 @@ logger = logging.getLogger("hydro_jev.jev")
 
 
 class IrrigationDecision(BaseModel):
+    """Validated decision fields returned by Jev."""
+
     model_config = ConfigDict(extra="forbid", strict=True)
 
     sproeien_nu: bool
@@ -25,11 +29,14 @@ class IrrigationDecision(BaseModel):
 
 
 class JevResponse(SystemOneResponse):
+    """Schema for the structured TypeSafe response."""
+
     sproeien_nu: ChoiceAnswer
     droogte_inschatting: ScoreAnswer
 
 
 def request_decision(context: IrrigationContext, api_key: str) -> IrrigationDecision:
+    """Ask Jev for a decision based on the supplied irrigation context."""
     started = perf_counter()
     logger.info("TypeSafe-verzoek gestart: irrigatiebeslissing")
     try:
@@ -67,7 +74,7 @@ def request_decision(context: IrrigationContext, api_key: str) -> IrrigationDeci
                 response_model=JevResponse,
             )
     except Exception as error:
-        logger.error(f"TypeSafe-verzoek mislukt na {perf_counter() - started:.2f} s ({type(error).__name__})")
+        logger.error("TypeSafe-verzoek mislukt na %.2f s (%s)", perf_counter() - started, type(error).__name__)
         raise
 
     choice = result.sproeien_nu.choice
@@ -78,5 +85,5 @@ def request_decision(context: IrrigationContext, api_key: str) -> IrrigationDeci
         probability=result.sproeien_nu.probabilities["sproeien"],
         dryness_score=result.droogte_inschatting.score,
     )
-    logger.info(f"TypeSafe-verzoek gereed ({perf_counter() - started:.2f} s)")
+    logger.info("TypeSafe-verzoek gereed (%.2f s)", perf_counter() - started)
     return decision
