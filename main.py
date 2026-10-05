@@ -7,7 +7,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from time import perf_counter
 
-from config import WATERING_MINUTES, Settings
+from config import Settings
 from ha.client import HomeAssistantClient
 from irrigation.context import build_context
 from irrigation.safety import SafetyResult, apply_safety
@@ -43,7 +43,7 @@ def run_with_home_assistant(settings: Settings | None = None) -> RunResult:
     """Fetch live Home Assistant context, then run the shared decision pipeline."""
     run_started = perf_counter()
     with _log_step("configuratie laden"):
-        settings = settings or Settings.from_environment()
+        settings = settings or Settings()
     _require_typesafe_key(settings)
     if not settings.ha_token:
         raise RuntimeError("Vul HA_TOKEN in .env in om Home Assistant te gebruiken.")
@@ -62,7 +62,7 @@ def run_with_sample_json(
     """Load a saved context JSON file, then run the shared decision pipeline."""
     run_started = perf_counter()
     with _log_step("configuratie laden"):
-        settings = settings or Settings.from_environment()
+        settings = settings or Settings()
     _require_typesafe_key(settings)
     with _log_step(f"sample-context laden: {sample_path}"):
         context = IrrigationContext.model_validate_json(sample_path.read_text(encoding="utf-8"))
@@ -88,7 +88,7 @@ def run_context(
         decision = None
 
     with _log_step("veiligheidscontroles uitvoeren"):
-        safety = apply_safety(decision, context.today_watering_minutes, WATERING_MINUTES)
+        safety = apply_safety(decision, context.today_watering_minutes, settings.watering_minutes, settings.max_minutes_per_day)
     dryness = decision.dryness_score if decision else None
     probability = decision.probability if decision else None
     logger.info(

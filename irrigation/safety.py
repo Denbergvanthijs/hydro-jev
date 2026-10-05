@@ -1,7 +1,6 @@
 import math
 from dataclasses import dataclass
 
-from config import MAX_MINUTES_PER_DAY
 from jev.client import IrrigationDecision
 
 
@@ -17,6 +16,7 @@ def apply_safety(
     decision: IrrigationDecision | None,
     today_minutes: float | None,
     requested_minutes: int,
+    max_minutes_per_day: int = 20,
 ) -> SafetyResult:
     if decision is None or not _valid_decision(decision):
         return SafetyResult(False, False, 0, "Ongeldige of ontbrekende Jev-beslissing.")
@@ -26,8 +26,8 @@ def apply_safety(
         return SafetyResult(True, False, 0, "Ongeldige of onrealistische sproeiduur.")
     if today_minutes is None or not math.isfinite(today_minutes) or today_minutes < 0:
         return SafetyResult(True, False, 0, "Dagduur onbekend of ongeldig; daglimiet niet veilig te controleren.")
-    if today_minutes + requested_minutes > MAX_MINUTES_PER_DAY:
-        return SafetyResult(True, False, 0, "Daglimiet van 20 minuten zou worden overschreden.")
+    if today_minutes + requested_minutes > max_minutes_per_day:
+        return SafetyResult(True, False, 0, f"Daglimiet van {max_minutes_per_day} minuten zou worden overschreden.")
     return SafetyResult(True, True, requested_minutes, None)
 
 

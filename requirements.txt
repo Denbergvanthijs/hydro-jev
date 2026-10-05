@@ -1,5 +1,5 @@
 pydantic>=2.7,<3
-python-dotenv>=1.0,<2
+pydantic-settings>=2.3,<3
 requests>=2.32,<3
 typesafe-sdk>=0.1
 
