@@ -1,4 +1,7 @@
+"""HTTP client for retrieving Home Assistant state and history."""
+
 import logging
+from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import datetime
 from time import perf_counter
@@ -11,19 +14,28 @@ logger = logging.getLogger("hydro_jev.ha")
 
 
 @contextmanager
-def _log_request(operation: str, entity_id: str):
+def _log_request(operation: str, entity_id: str) -> Iterator[None]:
+    """Log the start and outcome of one Home Assistant request."""
     started = perf_counter()
-    logger.info(f"HA-call gestart: {operation} entity={entity_id}")
+    logger.info("HA-call gestart: %s entity=%s", operation, entity_id)
     try:
         yield
     except Exception as error:
-        logger.error(f"HA-call mislukt: {operation} entity={entity_id} na {perf_counter() - started:.2f} s ({type(error).__name__})")
+        logger.error(
+            "HA-call mislukt: %s entity=%s na %.2f s (%s)",
+            operation,
+            entity_id,
+            perf_counter() - started,
+            type(error).__name__,
+        )
         raise
     else:
-        logger.info(f"HA-call gereed: {operation} entity={entity_id} ({perf_counter() - started:.2f} s)")
+        logger.info("HA-call gereed: %s entity=%s (%.2f s)", operation, entity_id, perf_counter() - started)
 
 
 class HomeAssistantClient:
+    """Small Home Assistant REST API client."""
+
     def __init__(
         self,
         base_url: str,
@@ -31,21 +43,24 @@ class HomeAssistantClient:
         session: requests.Session | None = None,
         timeout: float = 10.0,
     ) -> None:
+        """Create a client configured with its endpoint and bearer token."""
         self.base_url = base_url.rstrip("/")
         self.session = session or requests.Session()
         self.session.headers.update({"Authorization": f"Bearer {token}", "Content-Type": "application/json"})
         self.timeout = timeout
 
     def get_state(self, entity_id: str) -> dict[str, Any]:
+        """Return the state payload for an entity."""
         with _log_request("state", entity_id):
             response = self.session.get(f"{self.base_url}/api/states/{quote(entity_id, safe='.')}", timeout=self.timeout)
             response.raise_for_status()
             result = response.json()
             if not isinstance(result, dict):
-                raise ValueError(f"Home Assistant returned an invalid state for {entity_id}")
+                raise TypeError(f"Home Assistant returned an invalid state for {entity_id}")
             return result
 
     def get_history(self, entity_id: str, start: datetime, end: datetime) -> list[list[dict[str, Any]]]:
+        """Return state-history records for an entity and time interval."""
         start_path = quote(start.isoformat(), safe="")
         with _log_request("history", entity_id):
             response = self.session.get(
@@ -56,10 +71,11 @@ class HomeAssistantClient:
             response.raise_for_status()
             result = response.json()
             if not isinstance(result, list):
-                raise ValueError("Home Assistant returned invalid history data")
+                raise TypeError("Home Assistant returned invalid history data")
             return result
 
     def get_weather_forecast(self, entity_id: str) -> dict[str, Any]:
+        """Return the hourly weather forecast for an entity."""
         with _log_request("uurlijkse weersverwachting", entity_id):
             response = self.session.post(
                 f"{self.base_url}/api/services/weather/get_forecasts",
@@ -70,5 +86,5 @@ class HomeAssistantClient:
             response.raise_for_status()
             result = response.json()
             if not isinstance(result, dict):
-                raise ValueError("Home Assistant returned invalid forecast data")
+                raise TypeError("Home Assistant returned invalid forecast data")
             return result

@@ -1,7 +1,11 @@
+"""Pydantic models shared with the irrigation decision service."""
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class IrrigationContext(BaseModel):
+    """Normalized sensor data and watering history supplied to Jev."""
+
     model_config = ConfigDict(extra="forbid")
 
     observed_at: str

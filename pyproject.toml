@@ -7,4 +7,34 @@ line-length = 140
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B"]
+select = ["ALL"]
+ignore = [
+    "ANN401", # Disallows Any annotations; JSON payloads from Home Assistant are dynamic, so Any is appropriate at that boundary.
+    "BLE001", # Disallows catching Exception broadly; external HA and Jev failures must safely fall back to missing data or no watering.
+    "COM812", # Requires trailing commas; disabled because it conflicts with Ruff's formatter, which handles comma placement.
+    "CPY001", # Requires copyright notices; this project does not add per-file notices.
+    "D203",   # Requires a blank line before class docstrings; conflicts with D211, and this project uses D211's style.
+    "D212",   # Requires a summary on the first docstring line; conflicts with D213, and this project uses D213's style.
+    "EM101",  # Disallows literal strings in exceptions; concise, localized validation errors are kept close to where they are raised.
+    "EM102",  # Disallows f-strings in exceptions; contextual errors include the relevant entity directly where detected.
+    "ISC001", # Requires implicit string concatenation formatting; conflicts with the formatter's handling of concatenated strings.
+    "PLR0913", # Limits function parameters; context parsing functions accept several independent inputs.
+    "PLR0917", # Limits positional parameters; context parsing functions accept several independent inputs.
+    "TRY003",  # Disallows long exception messages inline; actionable validation messages are kept at their failure sites.
+    "TRY400",  # Prefers logger.exception over logger.error; caught service errors intentionally log type without traceback or raw details.
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+    "ANN",     # Skips type-annotation rules; short test helpers and pytest fixtures need not be fully annotated.
+    "ARG",     # Skips unused-argument rules; test doubles accept interface parameters they do not need.
+    "D",       # Skips docstring rules; test names describe behavior without repetitive docstrings.
+    "FBT",     # Skips boolean-argument rules; tests use boolean values to cover both decision outcomes.
+    "INP001",  # Skips the implicit-namespace-package rule; tests are discovered directly and need no package initializer.
+    "PLR2004", # Skips magic-value rules; literal expected values make assertions clear and are not production constants.
+    "S101",    # Skips the assert rule; pytest assertions are the intended way to verify test outcomes.
+    "S106",    # Skips hard-coded-password warnings; tests use fake tokens such as "test-ha-token", never real credentials.
+]
+"main.py" = [
+    "T201", # Allows print; the CLI intentionally writes its JSON result to standard output.
+]

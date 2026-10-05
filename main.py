@@ -1,3 +1,5 @@
+"""Command-line entry point for the Hydro-Jev irrigation pipeline."""
+
 import argparse
 import json
 import logging
@@ -21,6 +23,8 @@ DEFAULT_SAMPLE_PATH = Path(__file__).parent / "data" / "sample_context.json"
 
 @dataclass(frozen=True)
 class RunResult:
+    """Context, decision, and safety outcome produced by one pipeline run."""
+
     context: IrrigationContext
     decision: IrrigationDecision | None
     safety: SafetyResult
@@ -29,14 +33,14 @@ class RunResult:
 @contextmanager
 def _log_step(name: str) -> Iterator[None]:
     started = perf_counter()
-    logger.info(f"Stap gestart: {name}")
+    logger.info("Stap gestart: %s", name)
     try:
         yield
     except Exception:
-        logger.exception(f"Stap mislukt: {name} (na {perf_counter() - started:.2f} s)")
+        logger.exception("Stap mislukt: %s (na %.2f s)", name, perf_counter() - started)
         raise
     else:
-        logger.info(f"Stap gereed: {name} ({perf_counter() - started:.2f} s)")
+        logger.info("Stap gereed: %s (%.2f s)", name, perf_counter() - started)
 
 
 def run_with_home_assistant(settings: Settings | None = None) -> RunResult:
@@ -51,8 +55,7 @@ def run_with_home_assistant(settings: Settings | None = None) -> RunResult:
     ha = HomeAssistantClient(settings.ha_url, settings.ha_token)
     with _log_step("Home Assistant-context ophalen en opbouwen"):
         context = build_context(ha, settings)
-    result = run_context(context, settings, source="home_assistant", run_started=run_started)
-    return result
+    return run_context(context, settings, source="home_assistant", run_started=run_started)
 
 
 def run_with_sample_json(
@@ -77,14 +80,14 @@ def run_context(
 ) -> RunResult:
     """Ask Jev and apply safety checks to an already-built context."""
     run_started = run_started or perf_counter()
-    logger.info(f"Contextbron: {source}")
-    logger.info(f"Irrigation-context:\n{json.dumps(context.model_dump(mode='json'), ensure_ascii=False, indent=2)}")
+    logger.info("Contextbron: %s", source)
+    logger.info("Irrigation-context:\n%s", json.dumps(context.model_dump(mode="json"), ensure_ascii=False, indent=2))
 
     try:
         with _log_step("Jev-beslissing opvragen"):
             decision: IrrigationDecision | None = request_decision(context, settings.typesafe_api_key)
     except Exception as error:
-        logger.error(f"Jev-aanroep mislukt; veilig niet sproeien ({type(error).__name__}).")
+        logger.error("Jev-aanroep mislukt; veilig niet sproeien (%s).", type(error).__name__)
         decision = None
 
     with _log_step("veiligheidscontroles uitvoeren"):
@@ -92,10 +95,15 @@ def run_context(
     dryness = decision.dryness_score if decision else None
     probability = decision.probability if decision else None
     logger.info(
-        f"Besluit: jev_sproeien_nu={decision.sproeien_nu if decision else False} "
-        f"probability={probability} droogte_score={dryness} "
-        f"veiligheidsinterventie={safety.intervention} safety_goedgekeurd={safety.approved} "
-        f"duur_minuten={safety.minutes} dry_run={settings.dry_run} pomp_geactiveerd=false"
+        "Besluit: jev_sproeien_nu=%s probability=%s droogte_score=%s "
+        "veiligheidsinterventie=%s safety_goedgekeurd=%s duur_minuten=%s dry_run=%s pomp_geactiveerd=false",
+        decision.sproeien_nu if decision else False,
+        probability,
+        dryness,
+        safety.intervention,
+        safety.approved,
+        safety.minutes,
+        settings.dry_run,
     )
     with _log_step("resultaat tonen"):
         print(
@@ -111,7 +119,7 @@ def run_context(
                 indent=2,
             )
         )
-    logger.info(f"Hydro-Jev afgerond (totale duur {perf_counter() - run_started:.2f} s)")
+    logger.info("Hydro-Jev afgerond (totale duur %.2f s)", perf_counter() - run_started)
     return RunResult(context=context, decision=decision, safety=safety)
 
 
@@ -121,6 +129,7 @@ def _require_typesafe_key(settings: Settings) -> None:
 
 
 def main(argv: Sequence[str] | None = None) -> None:
+    """Parse command-line arguments and run the selected input pipeline."""
     parser = argparse.ArgumentParser(description="Run hydro-jev using HA or saved sample context.")
     parser.add_argument("--source", choices=("ha", "sample"), default="ha")
     parser.add_argument("--sample-file", type=Path, default=DEFAULT_SAMPLE_PATH)

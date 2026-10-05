@@ -1,3 +1,5 @@
+"""Build Jev's irrigation context from Home Assistant data."""
+
 import math
 from datetime import datetime, timedelta
 from typing import Any, Protocol
@@ -30,14 +32,23 @@ KWH_FIELDS = {"cumulative_energy_kwh", "energy_kwh_today", "energy_kwh_week"}
 
 
 class HAReader(Protocol):
-    def get_state(self, entity_id: str) -> dict[str, Any]: ...
+    """Home Assistant operations required by the context builder."""
 
-    def get_history(self, entity_id: str, start: datetime, end: datetime) -> list[list[dict[str, Any]]]: ...
+    def get_state(self, entity_id: str) -> dict[str, Any]:
+        """Return the current state of an entity."""
+        ...
 
-    def get_weather_forecast(self, entity_id: str) -> dict[str, Any]: ...
+    def get_history(self, entity_id: str, start: datetime, end: datetime) -> list[list[dict[str, Any]]]:
+        """Return an entity's state history for a time interval."""
+        ...
+
+    def get_weather_forecast(self, entity_id: str) -> dict[str, Any]:
+        """Return the forecast payload for a weather entity."""
+        ...
 
 
 def build_context(ha: HAReader, settings: Settings, now: datetime | None = None) -> IrrigationContext:
+    """Fetch sensor data and assemble a normalized irrigation context."""
     now = now or datetime.now().astimezone()
     start = now - timedelta(hours=settings.history_hours)
     missing: list[str] = []
