@@ -1,8 +1,8 @@
 """HTTP client for retrieving Home Assistant state and history."""
 
 import logging
-from contextlib import contextmanager
 from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import datetime
 from time import perf_counter
 from typing import Any
