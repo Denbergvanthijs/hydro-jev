@@ -76,6 +76,38 @@ def test_context_labels_configured_history_window() -> None:
     assert ha.history_requests == [(now - timedelta(hours=24), now)] * 2
 
 
+def test_context_labels_configured_forecast_window() -> None:
+    class ForecastHA(IncompleteHA):
+        def get_weather_forecast(self, entity_id: str) -> dict[str, object]:
+            return {
+                entity_id: {
+                    "forecast": [
+                        {"datetime": "2026-10-05T00:00:00+02:00", "condition": "cloudy"},
+                        {"datetime": "2026-10-05T12:00:00+02:00", "condition": "rainy"},
+                    ]
+                }
+            }
+
+    settings = Settings(
+        ha_url="http://ha.local:8123",
+        ha_token="",
+        typesafe_api_key="",
+        lawn_sowing_date=date(2026, 9, 26),
+        dry_run=True,
+        forecast_hours=24,
+    )
+    now = datetime.fromisoformat("2026-10-04T12:00:00+02:00")
+
+    context = build_context(ForecastHA(), settings, now)
+
+    assert context.forecast_hours == 24
+    assert [item["datetime"] for item in context.weather_forecast] == [
+        "2026-10-05T00:00:00+02:00",
+        "2026-10-05T12:00:00+02:00",
+    ]
+    assert [item["condition"] for item in context.weather_forecast] == ["cloudy", "rainy"]
+
+
 class FrankPriceHA(IncompleteHA):
     def __init__(self) -> None:
         self.price_state_reads = 0

@@ -1,6 +1,7 @@
 {
     "observed_at": "2026-10-04T12:00:00+02:00",
     "history_hours": 12,
+    "forecast_hours": 12,
     "lawn": {
         "area_m2": 45,
         "sprinkler_count": 2,
@@ -17,7 +18,7 @@
         "wind_speed": null
     },
     "weather_observations": [],
-    "forecast_next_12h": [],
+    "weather_forecast": [],
     "watering_sessions": [],
     "pump_state": null,
     "today_watering_minutes": null,
