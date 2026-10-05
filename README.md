@@ -78,7 +78,7 @@ De tests gebruiken fakes en fixtures; ze verbinden niet met Home Assistant of Ty
 
 ## Veiligheidsmechanisme
 
-- `max_minutes_per_day` (standaard 20) en `DRY_RUN=true` staan centraal in `config.py` (pydantic-settings, overschrijfbaar via `.env`). Jev krijgt deze instellingen niet als aanpasbare beslisvelden.
+- `MAX_MINUTES_PER_DAY` (20) en `DRY_RUN=true` staan in `config.py`. Jev krijgt deze instellingen niet als aanpasbare beslisvelden.
 - Een ontbrekende of ongeldige Jev-respons wordt behandeld als niet sproeien.
 - Een ongeldige sproeiduur, onbetrouwbare dagelijkse sproeiduur of overschrijding van de daglimiet blokkeert het advies.
 - De enige uitvoer is een advies; pompbediening is niet geïmplementeerd.
