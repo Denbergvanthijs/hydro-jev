@@ -228,7 +228,7 @@ def _forecast_items(forecast: dict[str, Any], now: datetime, missing: list[str],
         return []
     limit = now + timedelta(hours=forecast_hours)
     result: list[dict[str, object | None]] = []
-    fields = ("datetime", "condition", *WEATHER_FIELDS)
+    fields = ("datetime", "condition", *WEATHER_FIELDS, "precipitation")
     for row in rows:
         if not isinstance(row, dict):
             continue
