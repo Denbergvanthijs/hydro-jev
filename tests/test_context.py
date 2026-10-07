@@ -82,8 +82,8 @@ def test_context_labels_configured_forecast_window() -> None:
             return {
                 entity_id: {
                     "forecast": [
-                        {"datetime": "2026-10-05T00:00:00+02:00", "condition": "cloudy"},
-                        {"datetime": "2026-10-05T12:00:00+02:00", "condition": "rainy"},
+                        {"datetime": "2026-10-05T00:00:00+02:00", "condition": "cloudy", "precipitation": 0},
+                        {"datetime": "2026-10-05T12:00:00+02:00", "condition": "rainy", "precipitation": 2.5},
                     ]
                 }
             }
@@ -106,6 +106,7 @@ def test_context_labels_configured_forecast_window() -> None:
         "2026-10-05T12:00:00+02:00",
     ]
     assert [item["condition"] for item in context.weather_forecast] == ["cloudy", "rainy"]
+    assert [item["precipitation"] for item in context.weather_forecast] == [0, 2.5]
 
 
 class FrankPriceHA(IncompleteHA):
