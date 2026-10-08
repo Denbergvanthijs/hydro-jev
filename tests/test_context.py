@@ -37,7 +37,7 @@ def test_context_is_built_with_missing_home_assistant_data() -> None:
     context = build_context(IncompleteHA(), settings, now)
 
     assert context.current_weather["condition"] == "sunny"
-    assert "precipitation" not in context.current_weather
+    assert context.current_weather["precipitation"] is None
     assert "apparent_temperature" not in context.current_weather
     assert "wind_gust_speed" not in context.current_weather
     assert "temperature_unit" not in context.current_weather
@@ -107,6 +107,50 @@ def test_context_labels_configured_forecast_window() -> None:
     ]
     assert [item["condition"] for item in context.weather_forecast] == ["cloudy", "rainy"]
     assert [item["precipitation"] for item in context.weather_forecast] == [0, 2.5]
+
+
+def test_context_includes_precipitation_in_weather_observations() -> None:
+    class ObservedWeatherHA(IncompleteHA):
+        def get_history(self, entity_id: str, start: datetime, end: datetime) -> list[list[dict[str, object]]]:
+            if entity_id == "weather.forecast_home":
+                return [
+                    [
+                        {
+                            "last_changed": "2026-10-04T11:00:00+02:00",
+                            "state": "rainy",
+                            "attributes": {"temperature": 17, "precipitation": 1.2},
+                        }
+                    ]
+                ]
+            return []
+
+    settings = Settings(
+        ha_url="http://ha.local:8123",
+        ha_token="",
+        typesafe_api_key="",
+        lawn_sowing_date=date(2026, 9, 26),
+        dry_run=True,
+    )
+
+    context = build_context(
+        ObservedWeatherHA(),
+        settings,
+        datetime.fromisoformat("2026-10-04T12:00:00+02:00"),
+    )
+
+    assert context.weather_observations == [
+        {
+            "observed_at": "2026-10-04T11:00:00+02:00",
+            "condition": "rainy",
+            "temperature": 17,
+            "humidity": None,
+            "dew_point": None,
+            "cloud_coverage": None,
+            "uv_index": None,
+            "wind_speed": None,
+            "precipitation": 1.2,
+        }
+    ]
 
 
 class FrankPriceHA(IncompleteHA):

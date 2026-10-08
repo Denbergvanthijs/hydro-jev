@@ -27,6 +27,7 @@ WEATHER_FIELDS = (
     "cloud_coverage",
     "uv_index",
     "wind_speed",
+    "precipitation",
 )
 KWH_FIELDS = {"cumulative_energy_kwh", "energy_kwh_today", "energy_kwh_week"}
 
@@ -228,7 +229,7 @@ def _forecast_items(forecast: dict[str, Any], now: datetime, missing: list[str],
         return []
     limit = now + timedelta(hours=forecast_hours)
     result: list[dict[str, object | None]] = []
-    fields = ("datetime", "condition", *WEATHER_FIELDS, "precipitation")
+    fields = ("datetime", "condition", *WEATHER_FIELDS)
     for row in rows:
         if not isinstance(row, dict):
             continue
