@@ -37,7 +37,10 @@ def _context_builder_for(expected_client: object, context: IrrigationContext):  
     return build_context_for
 
 
-def test_sample_runner_loads_json_without_creating_ha_client(monkeypatch, capsys) -> None:  # noqa: ANN001, D103
+def test_sample_runner_loads_json_without_creating_ha_client(monkeypatch, capsys) -> None:  # noqa: ANN001
+    """Verify the sample route avoids constructing a Home Assistant client."""
+    with pytest.raises(AssertionError):
+        _unexpected_ha_client()
     monkeypatch.setattr(hydro_main, "request_decision", _no_water_decision)
     monkeypatch.setattr(hydro_main, "HomeAssistantClient", _unexpected_ha_client)
 
@@ -63,6 +66,9 @@ def test_home_assistant_runner_uses_ha_context_builder(monkeypatch, capsys) -> N
     assert result.context is sample_context  # noqa: S101
     assert output["source"] == "home_assistant"  # noqa: S101
     assert output["pump_activated"] is False  # noqa: S101
+
+    with pytest.raises(AssertionError):
+        _context_builder_for(expected_client, sample_context)(object(), _settings())
 
 
 def test_home_assistant_runner_requires_ha_token() -> None:  # noqa: D103

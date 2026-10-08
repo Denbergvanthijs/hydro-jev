@@ -1,5 +1,7 @@
-from datetime import datetime  # noqa: D100
+from datetime import UTC, datetime  # noqa: D100
 from zoneinfo import ZoneInfo
+
+import pytest
 
 from irrigation.context import (
     _attributes,
@@ -30,6 +32,17 @@ class FailingForecastHA:
     def get_weather_forecast(self, entity_id: str) -> dict[str, object]:
         """Raise when a forecast is requested."""
         raise RuntimeError(entity_id)
+
+
+def test_failing_forecast_fake_rejects_all_operations() -> None:
+    """Exercise all failure methods on the forecast fake."""
+    ha = FailingForecastHA()
+    with pytest.raises(RuntimeError):
+        ha.get_state("sensor.test")
+    with pytest.raises(RuntimeError):
+        ha.get_history("sensor.test", datetime.now(UTC), datetime.now(UTC))
+    with pytest.raises(RuntimeError):
+        ha.get_weather_forecast("weather.test")
 
 
 def test_context_helpers_handle_missing_values() -> None:  # noqa: D103
