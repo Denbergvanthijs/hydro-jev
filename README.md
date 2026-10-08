@@ -83,6 +83,7 @@ De elektrische prijslimiet van €0,70/kWh is instructie voor Jev, geen lokale i
 
 ```powershell
 pytest
+pytest --cov --cov-report=term-missing
 ruff check .
 ruff format --check .
 ty check

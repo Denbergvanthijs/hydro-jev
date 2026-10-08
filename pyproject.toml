@@ -2,6 +2,10 @@
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 
+[tool.coverage.run]
+source = ["."]
+omit = ["tests/*"]
+
 [tool.ruff]
 line-length = 140
 target-version = "py312"
