@@ -130,18 +130,14 @@ def build_context(ha: HAReader, settings: Settings, now: datetime | None = None)
             {
                 **item.model_dump(mode="json"),
                 "duration_minutes": (
-                    round(item.duration_minutes, SESSION_DURATION_DECIMAL_PLACES)
-                    if item.duration_minutes is not None
-                    else None
+                    round(item.duration_minutes, SESSION_DURATION_DECIMAL_PLACES) if item.duration_minutes is not None else None
                 ),
             }
             for item in sessions
         ],
         pump_state=str(pump_state.get("state")) if pump_state else None,
         today_watering_minutes=today_minutes,
-        current_electricity_price_eur_kwh=(
-            round(current_price, MEASUREMENT_DECIMAL_PLACES) if current_price is not None else None
-        ),
+        current_electricity_price_eur_kwh=(round(current_price, MEASUREMENT_DECIMAL_PLACES) if current_price is not None else None),
         future_electricity_prices=future_prices,
         missing_data=sorted(set(missing)),
         **{key: value for key, value in stats.items() if key not in {"today_watering_minutes", "pump_current_a"}},
