@@ -9,7 +9,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from time import perf_counter
 
-from config import Settings
+from config import LOG_DECIMAL_PLACES, Settings
 from ha.client import HomeAssistantClient
 from irrigation.context import build_context
 from irrigation.safety import SafetyResult, apply_safety
@@ -36,10 +36,10 @@ def _log_step(name: str) -> Generator[None]:
     try:
         yield
     except Exception:
-        logger.exception("Stap mislukt: %s (na %.2f s)", name, perf_counter() - started)
+        logger.exception("Stap mislukt: %s (na %s s)", name, round(perf_counter() - started, LOG_DECIMAL_PLACES))
         raise
     else:
-        logger.info("Stap gereed: %s (%.2f s)", name, perf_counter() - started)
+        logger.info("Stap gereed: %s (%s s)", name, round(perf_counter() - started, LOG_DECIMAL_PLACES))
 
 
 def run_with_home_assistant(settings: Settings | None = None) -> RunResult:
@@ -51,7 +51,7 @@ def run_with_home_assistant(settings: Settings | None = None) -> RunResult:
     if not settings.ha_token:
         raise RuntimeError("Vul HA_TOKEN in .env in om Home Assistant te gebruiken.")
 
-    ha = HomeAssistantClient(settings.ha_url, settings.ha_token)
+    ha = HomeAssistantClient(settings.ha_url, settings.ha_token, settings.ha_timeout_seconds)
     with _log_step("Home Assistant-context ophalen en opbouwen"):
         context = build_context(ha, settings)
     return run_context(context, settings, source="home_assistant", run_started=run_started)
@@ -81,17 +81,20 @@ def run_context(
     """Ask Jev and apply safety checks to an already-built context."""
     run_started = run_started or perf_counter()
     logger.info("Contextbron: %s", source)
-    logger.info("Irrigation-context:\n%s", json.dumps(context.model_dump(mode="json"), ensure_ascii=False, indent=2))
+    logger.info(
+        "Irrigation-context:\n%s",
+        json.dumps(context.model_dump(mode="json"), ensure_ascii=False, indent=2),
+    )
 
     try:
         with _log_step("Jev-beslissing opvragen"):
-            decision: IrrigationDecision | None = request_decision(context, settings.typesafe_api_key)
+            decision: IrrigationDecision | None = request_decision(context, settings)
     except Exception as error:
         logger.error("Jev-aanroep mislukt; veilig niet sproeien (%s).", type(error).__name__)
         decision = None
 
     with _log_step("veiligheidscontroles uitvoeren"):
-        safety = apply_safety(decision, context.today_watering_minutes, settings.watering_minutes, settings.max_minutes_per_day)
+        safety = apply_safety(decision, context.today_watering_minutes, settings)
     dryness = decision.dryness_score if decision else None
     probability = decision.probability if decision else None
     logger.info(
@@ -119,7 +122,10 @@ def run_context(
                 indent=2,
             )
         )
-    logger.info("Hydro-Jev afgerond (totale duur %.2f s)", perf_counter() - run_started)
+    logger.info(
+        "Hydro-Jev afgerond (totale duur %s s)",
+        round(perf_counter() - run_started, LOG_DECIMAL_PLACES),
+    )
     return RunResult(context=context, decision=decision, safety=safety)
 
 

@@ -19,8 +19,8 @@ def _settings(ha_token: str = "") -> Settings:
     )
 
 
-def _no_water_decision(context: IrrigationContext, api_key: str) -> IrrigationDecision:  # noqa: ARG001
-    assert api_key == "test-key"  # noqa: S101
+def _no_water_decision(context: IrrigationContext, settings: Settings) -> IrrigationDecision:  # noqa: ARG001
+    assert settings.typesafe_api_key == "test-key"  # noqa: S101
     return IrrigationDecision(sproeien_nu=False, probability=0.1, dryness_score=0.5)
 
 

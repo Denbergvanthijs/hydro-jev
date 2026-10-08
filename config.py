@@ -7,6 +7,20 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+SESSION_DURATION_DECIMAL_PLACES = 2
+MEASUREMENT_DECIMAL_PLACES = 3
+LOG_DECIMAL_PLACES = 2
+MIN_SCORE = 0
+ZERO_MINUTES = 0
+MAX_PROBABILITY = 1
+MAX_DRYNESS_SCORE = 4
+LIGHT_DRYNESS_SCORE = 1
+MODERATE_DRYNESS_SCORE = 2
+HIGH_DRYNESS_SCORE = 3
+DEFAULT_MAX_MINUTES_PER_DAY = 20
+DEFAULT_HISTORY_HOURS = 12
+DEFAULT_FORECAST_HOURS = 12
+
 
 class Settings(BaseSettings):
     """Validated runtime configuration for the irrigation application."""
@@ -16,6 +30,7 @@ class Settings(BaseSettings):
     ha_url: str = "http://192.168.1.101"
     ha_token: str = ""
     typesafe_api_key: str = ""
+    ha_timeout_seconds: float = 10.0
     timezone: str = "Europe/Amsterdam"
     lawn_sowing_date: date = date(2026, 9, 26)
     dry_run: bool = True
@@ -32,10 +47,13 @@ class Settings(BaseSettings):
     sample_context_path: Path = Path(__file__).parent / "data" / "sample_context.json"
     ha_price_entity_id: str | None = None
     ha_price_forecast_entity_id: str | None = None
-    max_minutes_per_day: int = 20
+    lawn_area_m2: int = 45
+    sprinkler_count: int = 2
+    max_minutes_per_day: int = DEFAULT_MAX_MINUTES_PER_DAY
     watering_minutes: int = 5
-    history_hours: int = 12
-    forecast_hours: int = 12
+    max_electricity_price_eur_kwh: float = 0.70
+    history_hours: int = DEFAULT_HISTORY_HOURS
+    forecast_hours: int = DEFAULT_FORECAST_HOURS
 
     @field_validator("ha_url")
     @classmethod

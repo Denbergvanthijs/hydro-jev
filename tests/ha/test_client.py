@@ -35,7 +35,7 @@ class Session:  # noqa: D101
 
 def test_home_assistant_client_requests_and_payload_validation() -> None:  # noqa: D103
     session = Session(Response({"state": "on"}))
-    client = HomeAssistantClient("http://ha.local/", "token", session=session, timeout=3)
+    client = HomeAssistantClient("http://ha.local/", "token", 3, session=session)
 
     assert client.get_state("switch.test") == {"state": "on"}  # noqa: S101
     assert "Authorization" in session.headers  # noqa: S101
@@ -62,7 +62,7 @@ def test_home_assistant_client_requests_and_payload_validation() -> None:  # noq
 
 def test_home_assistant_client_reraises_http_errors() -> None:  # noqa: D103
     error = RuntimeError("request failed")
-    client = HomeAssistantClient("http://ha.local", "token", session=Session(Response({}, error)))
+    client = HomeAssistantClient("http://ha.local", "token", 10, session=Session(Response({}, error)))
 
     with pytest.raises(RuntimeError, match="request failed"):
         client.get_state("switch.test")

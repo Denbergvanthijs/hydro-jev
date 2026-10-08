@@ -66,8 +66,8 @@ class HomeAssistantClient:
         self,
         base_url: str,
         token: str,
+        timeout: float,
         session: HTTPSession | None = None,
-        timeout: float = 10.0,
     ) -> None:
         """Create a client configured with its endpoint and bearer token."""
         self.base_url = base_url.rstrip("/")

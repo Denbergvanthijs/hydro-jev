@@ -26,10 +26,16 @@ Vul `.env` lokaal in. Dit bestand staat op de ignore-lijst en mag nooit worden g
 HA_URL=http://192.168.1.101
 HA_TOKEN=je_home_assistant_long_lived_access_token
 TYPESAFE_API_KEY=je_typesafe_api_key
+HA_TIMEOUT_SECONDS=10
 TIMEZONE=Europe/Amsterdam
 HA_PUMP_ENTITY_ID=switch.athom_stekker_kantoor_switch
 HA_WEATHER_ENTITY_ID=weather.forecast_home
+LAWN_AREA_M2=45
+SPRINKLER_COUNT=2
 LAWN_SOWING_DATE=2026-09-26
+WATERING_MINUTES=5
+MAX_MINUTES_PER_DAY=20
+MAX_ELECTRICITY_PRICE_EUR_KWH=0.70
 DRY_RUN=true
 ```
 
@@ -60,6 +66,13 @@ HA_PRICE_FORECAST_ENTITY_ID=sensor.jouw_prijsverwachting
 
 `HA_PRICE_ENTITY_ID` levert de actuele prijs uit de state-waarde. `HA_PRICE_FORECAST_ENTITY_ID` levert toekomstige prijzen uit een lijst in de state-attributen. Dat mag dezelfde entity zijn wanneer die beide bevat: de Frank Energie-entity hierboven heeft een actuele state en een `prices`-lijst met records (`from`, `price`, `till`). De applicatie leest dan de huidige prijs en filtert de lijst op de komende 12 uur. Ontbrekende of niet herkenbare data wordt als ontbrekend doorgegeven, niet ingevuld.
 
+De gazonoppervlakte en het aantal sproeiers zijn eveneens configureerbaar:
+
+```dotenv
+LAWN_AREA_M2=45
+SPRINKLER_COUNT=2
+```
+
 ## Dry run
 
 Start de applicatie vanuit de projectmap:
@@ -80,7 +93,7 @@ De run haalt states en 12 uur HA-history op, vraagt met de officiële Home Assis
 
 De beslissing verschijnt als JSON op het scherm en in de logs. Ontbrekende sensoren en API-data worden vermeld. Zonder betrouwbare dagelijkse sproeiduur blokkeert de safety-laag een positief sproeiadvies, omdat de daglimiet anders niet te controleren is.
 
-De elektrische prijslimiet van €0,70/kWh is instructie voor Jev, geen lokale if/else-beslisregel. Jev beslist ook zelf of de omstandigheden extreem droog zijn en geeft een droogtescore van 0 tot 4 terug. De applicatie vraagt alleen advies voor NU precies vijf minuten sproeien; de score bepaalt niet de irrigatiebeslissing.
+De elektrische prijslimiet is instructie voor Jev, geen lokale if/else-beslisregel. Jev beslist ook zelf of de omstandigheden extreem droog zijn en geeft een droogtescore van 0 tot 4 terug. De applicatie vraagt advies voor het aantal minuten uit `WATERING_MINUTES`; de score bepaalt niet de irrigatiebeslissing.
 
 ## Tests en kwaliteitschecks
 
@@ -96,7 +109,7 @@ De tests gebruiken fakes en fixtures; ze verbinden niet met Home Assistant of Ty
 
 ## Veiligheidsmechanisme
 
-- `MAX_MINUTES_PER_DAY` (20) en `DRY_RUN=true` staan in `config.py`. Jev krijgt deze instellingen niet als aanpasbare beslisvelden.
+- `WATERING_MINUTES`, `MAX_MINUTES_PER_DAY`, `MAX_ELECTRICITY_PRICE_EUR_KWH` en `HA_TIMEOUT_SECONDS` zijn configureerbaar via `.env`.
 - Een ontbrekende of ongeldige Jev-respons wordt behandeld als niet sproeien.
 - Een ongeldige sproeiduur, onbetrouwbare dagelijkse sproeiduur of overschrijding van de daglimiet blokkeert het advies.
 - De enige uitvoer is een advies; pompbediening is niet geïmplementeerd.

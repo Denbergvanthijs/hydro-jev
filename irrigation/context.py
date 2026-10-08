@@ -5,7 +5,13 @@ from datetime import datetime, timedelta
 from typing import Any, Protocol
 from zoneinfo import ZoneInfo
 
-from config import Settings
+from config import (
+    DEFAULT_FORECAST_HOURS,
+    MEASUREMENT_DECIMAL_PLACES,
+    MIN_SCORE,
+    SESSION_DURATION_DECIMAL_PLACES,
+    Settings,
+)
 from ha.history import extract_watering_sessions
 from jev.models import IrrigationContext
 
@@ -70,13 +76,13 @@ def build_context(ha: HAReader, settings: Settings, now: datetime | None = None)
         missing,
     )
     if stats["watering_minutes_week"] is not None:
-        stats["watering_minutes_week"] = round(stats["watering_minutes_week"], 2)
+        stats["watering_minutes_week"] = round(stats["watering_minutes_week"], SESSION_DURATION_DECIMAL_PLACES)
     if today_minutes is not None:
-        today_minutes = round(today_minutes, 2)
+        today_minutes = round(today_minutes, SESSION_DURATION_DECIMAL_PLACES)
     for field in KWH_FIELDS:
         value = stats[field]
         if value is not None:
-            stats[field] = round(value, 3)
+            stats[field] = round(value, MEASUREMENT_DECIMAL_PLACES)
 
     forecast = _get_forecast(ha, settings.ha_weather_entity_id, missing)
     current_weather = _weather_values(weather_state)
@@ -112,10 +118,10 @@ def build_context(ha: HAReader, settings: Settings, now: datetime | None = None)
         history_hours=settings.history_hours,
         forecast_hours=settings.forecast_hours,
         lawn={
-            "area_m2": 45,
-            "sprinkler_count": 2,
+            "area_m2": settings.lawn_area_m2,
+            "sprinkler_count": settings.sprinkler_count,
             "sowing_date": settings.lawn_sowing_date.isoformat(),
-            "age_days": max((now.date() - settings.lawn_sowing_date).days, 0),
+            "age_days": max((now.date() - settings.lawn_sowing_date).days, MIN_SCORE),
         },
         current_weather=current_weather,
         weather_observations=weather_observations,
@@ -123,13 +129,19 @@ def build_context(ha: HAReader, settings: Settings, now: datetime | None = None)
         watering_sessions=[
             {
                 **item.model_dump(mode="json"),
-                "duration_minutes": round(item.duration_minutes, 2) if item.duration_minutes is not None else None,
+                "duration_minutes": (
+                    round(item.duration_minutes, SESSION_DURATION_DECIMAL_PLACES)
+                    if item.duration_minutes is not None
+                    else None
+                ),
             }
             for item in sessions
         ],
         pump_state=str(pump_state.get("state")) if pump_state else None,
         today_watering_minutes=today_minutes,
-        current_electricity_price_eur_kwh=round(current_price, 3) if current_price is not None else None,
+        current_electricity_price_eur_kwh=(
+            round(current_price, MEASUREMENT_DECIMAL_PLACES) if current_price is not None else None
+        ),
         future_electricity_prices=future_prices,
         missing_data=sorted(set(missing)),
         **{key: value for key, value in stats.items() if key not in {"today_watering_minutes", "pump_current_a"}},
@@ -280,7 +292,7 @@ def _future_prices(
     now: datetime,
     missing: list[str],
     state: dict[str, Any] | None = None,
-    forecast_hours: int = 12,
+    forecast_hours: int = DEFAULT_FORECAST_HOURS,
     target_timezone: ZoneInfo | None = None,
 ) -> list[dict[str, object | None]]:
     if not entity_id:
@@ -314,7 +326,7 @@ def _future_prices(
                         value.get("till", value.get("end")),
                         target_timezone,
                     ),
-                    "price_eur_kwh": _round_optional(value.get("price", value.get("value")), 3),
+                    "price_eur_kwh": _round_optional(value.get("price", value.get("value")), MEASUREMENT_DECIMAL_PLACES),
                 }
             )
     return result

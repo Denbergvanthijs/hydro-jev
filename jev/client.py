@@ -13,6 +13,15 @@ from typesafe_sdk import (
     TypeSafeClient,
 )
 
+from config import (
+    HIGH_DRYNESS_SCORE,
+    LIGHT_DRYNESS_SCORE,
+    MAX_DRYNESS_SCORE,
+    MAX_PROBABILITY,
+    MIN_SCORE,
+    MODERATE_DRYNESS_SCORE,
+    Settings,
+)
 from jev.models import IrrigationContext
 
 logger = logging.getLogger("hydro_jev.jev")
@@ -24,8 +33,8 @@ class IrrigationDecision(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
 
     sproeien_nu: bool
-    probability: float = Field(ge=0, le=1)
-    dryness_score: float = Field(ge=0, le=4)
+    probability: float = Field(ge=MIN_SCORE, le=MAX_PROBABILITY)
+    dryness_score: float = Field(ge=MIN_SCORE, le=MAX_DRYNESS_SCORE)
 
 
 class JevResponse(SystemOneResponse):
@@ -35,39 +44,40 @@ class JevResponse(SystemOneResponse):
     droogte_inschatting: ScoreAnswer
 
 
-def request_decision(context: IrrigationContext, api_key: str) -> IrrigationDecision:
+def request_decision(context: IrrigationContext, settings: Settings) -> IrrigationDecision:
     """Ask Jev for a decision based on the supplied irrigation context."""
     started = perf_counter()
     logger.info("TypeSafe-verzoek gestart: irrigatiebeslissing")
     try:
-        with TypeSafeClient(api_key=api_key) as client:
+        with TypeSafeClient(api_key=settings.typesafe_api_key) as client:
             result = client.system_one(
                 state=context.model_dump(mode="json"),
                 questions={
                     "sproeien_nu": Choice(
                         instructions=(
-                            "Beslis uitsluitend of dit gazon NU voor precies 5 minuten gesproeid "
+                            f"Beslis uitsluitend of dit gazon NU voor precies {settings.watering_minutes} minuten gesproeid "
                             "moet worden. Weeg recente sproeisessies en regen zwaar mee; uitgestelde "
                             "regen kan wachten rechtvaardigen, en felle directe zon kan sproeien "
                             "onwenselijk maken. Het gazon is pas ingezaaid, dus regelmatige vochtigheid "
-                            "is belangrijk. Beschouw elektriciteitsprijs boven EUR 0,70/kWh als normaal "
+                            f"is belangrijk. Beschouw elektriciteitsprijs boven "
+                            f"EUR {settings.max_electricity_price_eur_kwh:.2f}/kWh als normaal "
                             "extreem duur, maar negeer dat zelf bij extreme droogte. Je bepaalt zelf "
                             "de droogte op basis van alle context. Ontbrekende gegevens zijn onbekend, "
                             "niet nul. Geef ja-kans als probability."
                         ),
                         criteria={
-                            "sproeien": "NU precies 5 minuten sproeien",
+                            "sproeien": f"NU precies {settings.watering_minutes} minuten sproeien",
                             "niet_sproeien": "NU niet sproeien",
                         },
                     ),
                     "droogte_inschatting": Score(
-                        instructions="Schat de droogte voor dit gazon in van 0 tot en met 4.",
+                        instructions=f"Schat de droogte voor dit gazon in van {MIN_SCORE} tot en met {MAX_DRYNESS_SCORE}.",
                         criteria=[
-                            "0: niet droog",
-                            "1: licht droog",
-                            "2: matig droog",
-                            "3: erg droog",
-                            "4: extreem droog",
+                            f"{MIN_SCORE}: niet droog",
+                            f"{LIGHT_DRYNESS_SCORE}: licht droog",
+                            f"{MODERATE_DRYNESS_SCORE}: matig droog",
+                            f"{HIGH_DRYNESS_SCORE}: erg droog",
+                            f"{MAX_DRYNESS_SCORE}: extreem droog",
                         ],
                     ),
                 },

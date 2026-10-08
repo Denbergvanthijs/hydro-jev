@@ -6,6 +6,8 @@ from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel
 
+from config import SESSION_DURATION_DECIMAL_PLACES
+
 
 class WateringSession(BaseModel):
     """A watering session derived from pump state transitions."""
@@ -47,7 +49,10 @@ def extract_watering_sessions(
                     )
                 )
             else:
-                duration = round((changed_at - active_since).total_seconds() / 60, 2)
+                duration = round(
+                    (changed_at - active_since).total_seconds() / 60,
+                    SESSION_DURATION_DECIMAL_PLACES,
+                )
                 sessions.append(
                     WateringSession(
                         start_time=active_since,

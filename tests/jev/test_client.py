@@ -4,6 +4,7 @@ from typing import Self
 
 import pytest
 
+from config import Settings
 from jev import client as jev_client
 from jev.models import IrrigationContext
 
@@ -30,7 +31,8 @@ def test_jev_request_success_and_invalid_choice(monkeypatch: pytest.MonkeyPatch)
             )
 
     monkeypatch.setattr(jev_client, "TypeSafeClient", FakeClient)
-    decision = jev_client.request_decision(_sample_context(), "key")
+    settings = Settings(typesafe_api_key="key")
+    decision = jev_client.request_decision(_sample_context(), settings)
     assert decision.sproeien_nu is True  # noqa: S101
     assert decision.probability == 0.75  # noqa: PLR2004, S101
 
@@ -43,7 +45,7 @@ def test_jev_request_success_and_invalid_choice(monkeypatch: pytest.MonkeyPatch)
 
     monkeypatch.setattr(jev_client, "TypeSafeClient", InvalidClient)
     with pytest.raises(ValueError, match="unknown"):
-        jev_client.request_decision(_sample_context(), "key")
+        jev_client.request_decision(_sample_context(), Settings(typesafe_api_key="key"))
 
 
 def test_jev_request_reraises_client_error(monkeypatch: pytest.MonkeyPatch) -> None:  # noqa: D103
@@ -53,4 +55,4 @@ def test_jev_request_reraises_client_error(monkeypatch: pytest.MonkeyPatch) -> N
 
     monkeypatch.setattr(jev_client, "TypeSafeClient", FailingClient)
     with pytest.raises(RuntimeError, match="service unavailable"):
-        jev_client.request_decision(_sample_context(), "key")
+        jev_client.request_decision(_sample_context(), Settings(typesafe_api_key="key"))

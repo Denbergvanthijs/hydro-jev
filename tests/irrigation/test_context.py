@@ -162,6 +162,22 @@ def test_context_uses_configured_pump_and_weather_entities() -> None:  # noqa: D
     assert context.current_weather["condition"] == "cloudy"  # noqa: S101
 
 
+def test_context_uses_configured_lawn_dimensions() -> None:
+    """Verify that configured lawn dimensions are included in the context."""
+    configured_area_m2 = 60
+    configured_sprinkler_count = 3
+    settings = Settings(lawn_area_m2=configured_area_m2, sprinkler_count=configured_sprinkler_count)
+
+    context = build_context(
+        IncompleteHA(),
+        settings,
+        datetime.fromisoformat("2026-10-04T12:00:00+02:00"),
+    )
+
+    assert context.lawn["area_m2"] == configured_area_m2  # noqa: S101
+    assert context.lawn["sprinkler_count"] == configured_sprinkler_count  # noqa: S101
+
+
 def test_context_includes_precipitation_in_weather_observations() -> None:  # noqa: D103
     class ObservedWeatherHA(IncompleteHA):
         def get_history(self, entity_id: str, start: datetime, end: datetime) -> list[list[dict[str, object]]]:  # noqa: ARG002
