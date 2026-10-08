@@ -1,4 +1,4 @@
-from pathlib import Path
+from pathlib import Path  # noqa: D100
 from types import SimpleNamespace
 from typing import Self
 
@@ -12,7 +12,7 @@ def _sample_context() -> IrrigationContext:
     return IrrigationContext.model_validate_json((Path(__file__).parents[2] / "data" / "sample_context.json").read_text(encoding="utf-8"))
 
 
-def test_jev_request_success_and_invalid_choice(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_jev_request_success_and_invalid_choice(monkeypatch: pytest.MonkeyPatch) -> None:  # noqa: D103
     class FakeClient:
         def __init__(self, **_: object) -> None:
             pass
@@ -31,8 +31,8 @@ def test_jev_request_success_and_invalid_choice(monkeypatch: pytest.MonkeyPatch)
 
     monkeypatch.setattr(jev_client, "TypeSafeClient", FakeClient)
     decision = jev_client.request_decision(_sample_context(), "key")
-    assert decision.sproeien_nu is True
-    assert decision.probability == 0.75
+    assert decision.sproeien_nu is True  # noqa: S101
+    assert decision.probability == 0.75  # noqa: PLR2004, S101
 
     class InvalidClient(FakeClient):
         def system_one(self, **_: object) -> object:
@@ -46,7 +46,7 @@ def test_jev_request_success_and_invalid_choice(monkeypatch: pytest.MonkeyPatch)
         jev_client.request_decision(_sample_context(), "key")
 
 
-def test_jev_request_reraises_client_error(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_jev_request_reraises_client_error(monkeypatch: pytest.MonkeyPatch) -> None:  # noqa: D103
     class FailingClient:
         def __init__(self, **_: object) -> None:
             raise RuntimeError("service unavailable")

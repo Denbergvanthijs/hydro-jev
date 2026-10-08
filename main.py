@@ -3,7 +3,7 @@
 import argparse
 import json
 import logging
-from collections.abc import Iterator, Sequence
+from collections.abc import Generator, Sequence
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -30,7 +30,7 @@ class RunResult:
 
 
 @contextmanager
-def _log_step(name: str) -> Iterator[None]:
+def _log_step(name: str) -> Generator[None]:
     started = perf_counter()
     logger.info("Stap gestart: %s", name)
     try:

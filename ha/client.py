@@ -1,11 +1,11 @@
 """HTTP client for retrieving Home Assistant state and history."""
 
 import logging
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from datetime import datetime
 from time import perf_counter
-from typing import Any
+from typing import Any, Protocol
 from urllib.parse import quote
 
 import requests
@@ -13,8 +13,34 @@ import requests
 logger = logging.getLogger("hydro_jev.ha")
 
 
+class HTTPResponse(Protocol):
+    """HTTP response operations used by the Home Assistant client."""
+
+    def raise_for_status(self) -> None:
+        """Raise for an unsuccessful HTTP response."""
+        ...
+
+    def json(self) -> object:
+        """Decode the JSON response body."""
+        ...
+
+
+class HTTPSession(Protocol):
+    """HTTP session operations used by the Home Assistant client."""
+
+    headers: dict[str, str]
+
+    def get(self, url: str, **kwargs: object) -> HTTPResponse:
+        """Perform a GET request."""
+        ...
+
+    def post(self, url: str, **kwargs: object) -> HTTPResponse:
+        """Perform a POST request."""
+        ...
+
+
 @contextmanager
-def _log_request(operation: str, entity_id: str) -> Iterator[None]:
+def _log_request(operation: str, entity_id: str) -> Generator[None]:
     """Log the start and outcome of one Home Assistant request."""
     started = perf_counter()
     logger.info("HA-call gestart: %s entity=%s", operation, entity_id)
@@ -40,7 +66,7 @@ class HomeAssistantClient:
         self,
         base_url: str,
         token: str,
-        session: requests.Session | None = None,
+        session: HTTPSession | None = None,
         timeout: float = 10.0,
     ) -> None:
         """Create a client configured with its endpoint and bearer token."""
