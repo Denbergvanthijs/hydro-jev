@@ -27,6 +27,8 @@ HA_URL=http://192.168.1.101
 HA_TOKEN=je_home_assistant_long_lived_access_token
 TYPESAFE_API_KEY=je_typesafe_api_key
 TIMEZONE=Europe/Amsterdam
+HA_PUMP_ENTITY_ID=switch.athom_stekker_kantoor_switch
+HA_WEATHER_ENTITY_ID=weather.forecast_home
 LAWN_SOWING_DATE=2026-09-26
 DRY_RUN=true
 ```

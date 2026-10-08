@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     timezone: str = "Europe/Amsterdam"
     lawn_sowing_date: date = date(2026, 9, 26)
     dry_run: bool = True
+    ha_pump_entity_id: str = "switch.athom_stekker_kantoor_switch"
+    ha_weather_entity_id: str = "weather.forecast_home"
     ha_pump_power_entity_id: str = "sensor.athom_stekker_kantoor_power"
     ha_cumulative_energy_entity_id: str = "sensor.athom_stekker_kantoor_energy"
     ha_watering_events_today_entity_id: str = "sensor.hydrofoor_inschakelingen_vandaag"

@@ -137,6 +137,31 @@ def test_context_uses_configured_sensor_entity_id() -> None:
     assert entity_id not in context.missing_data
 
 
+def test_context_uses_configured_pump_and_weather_entities() -> None:
+    pump_entity_id = "switch.custom_pump"
+    weather_entity_id = "weather.custom_home"
+
+    class ConfiguredEntitiesHA(IncompleteHA):
+        def get_state(self, entity_id: str) -> dict[str, object]:
+            if entity_id == pump_entity_id:
+                return {"state": "off", "attributes": {}}
+            if entity_id == weather_entity_id:
+                return {"state": "cloudy", "attributes": {}}
+            return super().get_state(entity_id)
+
+        def get_weather_forecast(self, entity_id: str) -> dict[str, object]:
+            return {entity_id: {"forecast": []}}
+
+    context = build_context(
+        ConfiguredEntitiesHA(),
+        Settings(ha_pump_entity_id=pump_entity_id, ha_weather_entity_id=weather_entity_id),
+        datetime.fromisoformat("2026-10-04T12:00:00+02:00"),
+    )
+
+    assert context.pump_state == "off"
+    assert context.current_weather["condition"] == "cloudy"
+
+
 def test_context_includes_precipitation_in_weather_observations() -> None:
     class ObservedWeatherHA(IncompleteHA):
         def get_history(self, entity_id: str, start: datetime, end: datetime) -> list[list[dict[str, object]]]:

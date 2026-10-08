@@ -3,7 +3,6 @@ from types import SimpleNamespace
 from zoneinfo import ZoneInfo
 
 from irrigation.context import (
-    WEATHER_ENTITY,
     _attributes,
     _duration_minutes,
     _forecast_items,
@@ -14,6 +13,8 @@ from irrigation.context import (
     _weather_observations,
     _weather_values,
 )
+
+WEATHER_ENTITY = "weather.forecast_home"
 
 
 def test_context_helpers_handle_missing_values() -> None:
@@ -58,12 +59,13 @@ def test_forecast_and_price_helpers_filter_invalid_and_out_of_range_rows() -> No
             }
         }
     }
-    items = _forecast_items(forecast, now, missing, 12)
+    items = _forecast_items(forecast, WEATHER_ENTITY, now, missing, 12)
     assert [item["temperature"] for item in items] == [None, 20]
     assert len(missing) == 2
-    assert _forecast_items({}, now, [], 12) == []
+    assert _forecast_items({}, WEATHER_ENTITY, now, [], 12) == []
     normalized = _forecast_items(
         {WEATHER_ENTITY: {"forecast": [{"datetime": "2026-10-04T11:00:00+00:00"}]}},
+        WEATHER_ENTITY,
         now,
         [],
         12,
@@ -74,6 +76,7 @@ def test_forecast_and_price_helpers_filter_invalid_and_out_of_range_rows() -> No
     forecast_missing: list[str] = []
     assert _get_forecast(
         SimpleNamespace(get_weather_forecast=lambda _: (_ for _ in ()).throw(RuntimeError("unavailable"))),
+        WEATHER_ENTITY,
         forecast_missing,
     ) == {}
     assert forecast_missing == ["hourly weather forecast"]

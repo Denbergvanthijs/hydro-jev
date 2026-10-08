@@ -5,7 +5,7 @@ import pytest
 
 import main
 from config import Settings
-from irrigation.context import WEATHER_ENTITY, build_context
+from irrigation.context import build_context
 from jev.models import IrrigationContext
 
 
@@ -36,7 +36,7 @@ def test_main_error_and_cli_paths(monkeypatch: pytest.MonkeyPatch, caplog: pytes
 
     class MissingPriceHA:
         def get_state(self, entity_id: str) -> dict[str, object]:
-            if entity_id == WEATHER_ENTITY:
+            if entity_id == "weather.forecast_home":
                 return {"state": "sunny", "attributes": {}}
             raise RuntimeError("missing")
 

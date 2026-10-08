@@ -9,8 +9,6 @@ from config import Settings
 from ha.history import extract_watering_sessions
 from jev.models import IrrigationContext
 
-PUMP_ENTITY = "switch.athom_stekker_kantoor_switch"
-WEATHER_ENTITY = "weather.forecast_home"
 WEATHER_FIELDS = (
     "temperature",
     "humidity",
@@ -46,10 +44,10 @@ def build_context(ha: HAReader, settings: Settings, now: datetime | None = None)
     start = now - timedelta(hours=settings.history_hours)
     missing: list[str] = []
 
-    pump_state = _read_state(ha, PUMP_ENTITY, missing)
-    weather_state = _read_state(ha, WEATHER_ENTITY, missing)
-    history, _ = _read_history(ha, PUMP_ENTITY, start, now, missing)
-    weather_history, _ = _read_history(ha, WEATHER_ENTITY, start, now, missing)
+    pump_state = _read_state(ha, settings.ha_pump_entity_id, missing)
+    weather_state = _read_state(ha, settings.ha_weather_entity_id, missing)
+    history, _ = _read_history(ha, settings.ha_pump_entity_id, start, now, missing)
+    weather_history, _ = _read_history(ha, settings.ha_weather_entity_id, start, now, missing)
     sessions = extract_watering_sessions(history, now, target_timezone)
     stats: dict[str, float | None] = {}
     states: dict[str, dict[str, Any] | None] = {}
@@ -80,10 +78,17 @@ def build_context(ha: HAReader, settings: Settings, now: datetime | None = None)
         if value is not None:
             stats[field] = round(value, 3)
 
-    forecast = _get_forecast(ha, missing)
+    forecast = _get_forecast(ha, settings.ha_weather_entity_id, missing)
     current_weather = _weather_values(weather_state)
     weather_observations = _weather_observations(weather_history, target_timezone)
-    forecast_items = _forecast_items(forecast, now, missing, settings.forecast_hours, target_timezone)
+    forecast_items = _forecast_items(
+        forecast,
+        settings.ha_weather_entity_id,
+        now,
+        missing,
+        settings.forecast_hours,
+        target_timezone,
+    )
     current_price = None
     price_state = None
     if settings.ha_price_entity_id:
@@ -223,9 +228,9 @@ def _weather_observations(
     return observations
 
 
-def _get_forecast(ha: HAReader, missing: list[str]) -> dict[str, Any]:
+def _get_forecast(ha: HAReader, entity_id: str, missing: list[str]) -> dict[str, Any]:
     try:
-        return ha.get_weather_forecast(WEATHER_ENTITY)
+        return ha.get_weather_forecast(entity_id)
     except Exception:
         missing.append("hourly weather forecast")
         return {}
@@ -233,13 +238,14 @@ def _get_forecast(ha: HAReader, missing: list[str]) -> dict[str, Any]:
 
 def _forecast_items(
     forecast: dict[str, Any],
+    entity_id: str,
     now: datetime,
     missing: list[str],
     forecast_hours: int,
     target_timezone: ZoneInfo | None = None,
 ) -> list[dict[str, object | None]]:
     response = forecast.get("service_response", forecast)
-    entity_data = response.get(WEATHER_ENTITY) if isinstance(response, dict) else None
+    entity_data = response.get(entity_id) if isinstance(response, dict) else None
     rows = entity_data.get("forecast") if isinstance(entity_data, dict) else None
     if not isinstance(rows, list):
         return []
