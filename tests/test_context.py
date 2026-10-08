@@ -109,6 +109,34 @@ def test_context_labels_configured_forecast_window() -> None:
     assert [item["precipitation"] for item in context.weather_forecast] == [0, 2.5]
 
 
+def test_context_uses_configured_sensor_entity_id() -> None:
+    entity_id = "sensor.custom_pump_power"
+
+    class ConfiguredSensorHA(IncompleteHA):
+        def get_state(self, requested_entity_id: str) -> dict[str, object]:
+            if requested_entity_id == entity_id:
+                return {"state": "123.4", "attributes": {}}
+            return super().get_state(requested_entity_id)
+
+    settings = Settings(
+        ha_url="http://ha.local:8123",
+        ha_token="",
+        typesafe_api_key="",
+        lawn_sowing_date=date(2026, 9, 26),
+        dry_run=True,
+        ha_pump_power_entity_id=entity_id,
+    )
+
+    context = build_context(
+        ConfiguredSensorHA(),
+        settings,
+        datetime.fromisoformat("2026-10-04T12:00:00+02:00"),
+    )
+
+    assert context.pump_power_w == 123.4
+    assert entity_id not in context.missing_data
+
+
 def test_context_includes_precipitation_in_weather_observations() -> None:
     class ObservedWeatherHA(IncompleteHA):
         def get_history(self, entity_id: str, start: datetime, end: datetime) -> list[list[dict[str, object]]]:

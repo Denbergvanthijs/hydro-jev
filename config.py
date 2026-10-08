@@ -16,6 +16,14 @@ class Settings(BaseSettings):
     typesafe_api_key: str = ""
     lawn_sowing_date: date = date(2026, 9, 26)
     dry_run: bool = True
+    ha_pump_power_entity_id: str = "sensor.athom_stekker_kantoor_power"
+    ha_cumulative_energy_entity_id: str = "sensor.athom_stekker_kantoor_energy"
+    ha_watering_events_today_entity_id: str = "sensor.hydrofoor_inschakelingen_vandaag"
+    ha_watering_events_week_entity_id: str = "sensor.hydrofoor_inschakelingen_deze_week"
+    ha_today_watering_minutes_entity_id: str = "sensor.hydrofoor_inschakelduur_vandaag"
+    ha_watering_minutes_week_entity_id: str = "sensor.hydrofoor_inschakelduur_deze_week"
+    ha_energy_kwh_today_entity_id: str = "sensor.hydrofoor_verbruik_vandaag"
+    ha_energy_kwh_week_entity_id: str = "sensor.hydrofoor_verbruik_deze_week"
     ha_price_entity_id: str | None = None
     ha_price_forecast_entity_id: str | None = None
     max_minutes_per_day: int = 20

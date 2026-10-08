@@ -10,16 +10,6 @@ from jev.models import IrrigationContext
 
 PUMP_ENTITY = "switch.athom_stekker_kantoor_switch"
 WEATHER_ENTITY = "weather.forecast_home"
-STATE_ENTITIES = {
-    "pump_power_w": "sensor.athom_stekker_kantoor_power",
-    "cumulative_energy_kwh": "sensor.athom_stekker_kantoor_energy",
-    "watering_events_today": "sensor.hydrofoor_inschakelingen_vandaag",
-    "watering_events_week": "sensor.hydrofoor_inschakelingen_deze_week",
-    "today_watering_minutes": "sensor.hydrofoor_inschakelduur_vandaag",
-    "watering_minutes_week": "sensor.hydrofoor_inschakelduur_deze_week",
-    "energy_kwh_today": "sensor.hydrofoor_verbruik_vandaag",
-    "energy_kwh_week": "sensor.hydrofoor_verbruik_deze_week",
-}
 WEATHER_FIELDS = (
     "temperature",
     "humidity",
@@ -61,7 +51,8 @@ def build_context(ha: HAReader, settings: Settings, now: datetime | None = None)
     sessions = extract_watering_sessions(history, now)
     stats: dict[str, float | None] = {}
     states: dict[str, dict[str, Any] | None] = {}
-    for field, entity_id in STATE_ENTITIES.items():
+    state_entities = _state_entities(settings)
+    for field, entity_id in state_entities.items():
         raw = _read_state(ha, entity_id, missing)
         states[field] = raw
         stats[field] = _numeric_state(raw, entity_id, missing)
@@ -69,13 +60,13 @@ def build_context(ha: HAReader, settings: Settings, now: datetime | None = None)
     today_minutes = _duration_minutes(
         stats["today_watering_minutes"],
         states["today_watering_minutes"],
-        STATE_ENTITIES["today_watering_minutes"],
+        state_entities["today_watering_minutes"],
         missing,
     )
     stats["watering_minutes_week"] = _duration_minutes(
         stats["watering_minutes_week"],
         states["watering_minutes_week"],
-        STATE_ENTITIES["watering_minutes_week"],
+        state_entities["watering_minutes_week"],
         missing,
     )
     if stats["watering_minutes_week"] is not None:
@@ -140,6 +131,19 @@ def build_context(ha: HAReader, settings: Settings, now: datetime | None = None)
 def _attributes(state: dict[str, Any] | None) -> dict[str, Any]:
     attributes = state.get("attributes") if state else None
     return attributes if isinstance(attributes, dict) else {}
+
+
+def _state_entities(settings: Settings) -> dict[str, str]:
+    return {
+        "pump_power_w": settings.ha_pump_power_entity_id,
+        "cumulative_energy_kwh": settings.ha_cumulative_energy_entity_id,
+        "watering_events_today": settings.ha_watering_events_today_entity_id,
+        "watering_events_week": settings.ha_watering_events_week_entity_id,
+        "today_watering_minutes": settings.ha_today_watering_minutes_entity_id,
+        "watering_minutes_week": settings.ha_watering_minutes_week_entity_id,
+        "energy_kwh_today": settings.ha_energy_kwh_today_entity_id,
+        "energy_kwh_week": settings.ha_energy_kwh_week_entity_id,
+    }
 
 
 def _read_state(ha: HAReader, entity_id: str, missing: list[str]) -> dict[str, Any] | None:

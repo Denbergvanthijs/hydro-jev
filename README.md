@@ -34,6 +34,19 @@ Maak in Home Assistant een Long-Lived Access Token aan via je gebruikersprofiel.
 
 Maak een API key aan bij TypeSafe en zet die in `TYPESAFE_API_KEY`. De officiële SDK gebruikt die key voor TypeSafe's eigen API. Zonder modeloverride kiest de SDK het gedocumenteerde standaardmodel `jev-latest`.
 
+Alle irrigatiesensoren zijn configureerbaar. De standaardwaarden staan in `.env.example`; vervang ze wanneer jouw Home Assistant andere entity-ID's gebruikt:
+
+```dotenv
+HA_PUMP_POWER_ENTITY_ID=sensor.athom_stekker_kantoor_power
+HA_CUMULATIVE_ENERGY_ENTITY_ID=sensor.athom_stekker_kantoor_energy
+HA_WATERING_EVENTS_TODAY_ENTITY_ID=sensor.hydrofoor_inschakelingen_vandaag
+HA_WATERING_EVENTS_WEEK_ENTITY_ID=sensor.hydrofoor_inschakelingen_deze_week
+HA_TODAY_WATERING_MINUTES_ENTITY_ID=sensor.hydrofoor_inschakelduur_vandaag
+HA_WATERING_MINUTES_WEEK_ENTITY_ID=sensor.hydrofoor_inschakelduur_deze_week
+HA_ENERGY_KWH_TODAY_ENTITY_ID=sensor.hydrofoor_verbruik_vandaag
+HA_ENERGY_KWH_WEEK_ENTITY_ID=sensor.hydrofoor_verbruik_deze_week
+```
+
 De projectbeschrijving bevat geen entity-ID’s voor elektriciteitsprijzen. Als je die in HA hebt, configureer ze in `.env`:
 
 ```dotenv
