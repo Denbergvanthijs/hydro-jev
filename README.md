@@ -85,11 +85,11 @@ De elektrische prijslimiet van €0,70/kWh is instructie voor Jev, geen lokale i
 ## Tests en kwaliteitschecks
 
 ```powershell
-pytest
-pytest --cov --cov-report=term-missing
-ruff check .
-ruff format --check .
-ty check
+python -m pytest
+python -m pytest --cov --cov-report=term-missing
+python -m ruff check . --fix
+python -m ruff format .
+python -m ty check
 ```
 
 De tests gebruiken fakes en fixtures; ze verbinden niet met Home Assistant of TypeSafe en bevatten geen mogelijkheid om de pomp te starten.

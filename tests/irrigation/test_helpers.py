@@ -34,10 +34,13 @@ def test_context_helpers_handle_missing_values() -> None:
 
     assert _weather_values(None)["condition"] is None
     assert _weather_observations([[{"state": "cloudy", "attributes": "invalid"}]])[0]["temperature"] is None
-    assert _weather_observations(
-        [[{"last_changed": "2026-10-04T09:00:00+00:00", "state": "rainy", "attributes": {}}]],
-        ZoneInfo("Europe/Amsterdam"),
-    )[0]["observed_at"] == "2026-10-04T11:00:00+02:00"
+    assert (
+        _weather_observations(
+            [[{"last_changed": "2026-10-04T09:00:00+00:00", "state": "rainy", "attributes": {}}]],
+            ZoneInfo("Europe/Amsterdam"),
+        )[0]["observed_at"]
+        == "2026-10-04T11:00:00+02:00"
+    )
     assert _normalize_datetime_string("invalid", ZoneInfo("Europe/Amsterdam")) == "invalid"
     assert _normalize_datetime_string("2026-10-04T11:00:00", ZoneInfo("Europe/Amsterdam")) == "2026-10-04T11:00:00+02:00"
 
@@ -74,11 +77,14 @@ def test_forecast_and_price_helpers_filter_invalid_and_out_of_range_rows() -> No
     assert normalized[0]["datetime"] == "2026-10-04T13:00:00+02:00"
 
     forecast_missing: list[str] = []
-    assert _get_forecast(
-        SimpleNamespace(get_weather_forecast=lambda _: (_ for _ in ()).throw(RuntimeError("unavailable"))),
-        WEATHER_ENTITY,
-        forecast_missing,
-    ) == {}
+    assert (
+        _get_forecast(
+            SimpleNamespace(get_weather_forecast=lambda _: (_ for _ in ()).throw(RuntimeError("unavailable"))),
+            WEATHER_ENTITY,
+            forecast_missing,
+        )
+        == {}
+    )
     assert forecast_missing == ["hourly weather forecast"]
 
     prices = [

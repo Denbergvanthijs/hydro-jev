@@ -9,9 +9,7 @@ from jev.models import IrrigationContext
 
 
 def _sample_context() -> IrrigationContext:
-    return IrrigationContext.model_validate_json(
-        (Path(__file__).parents[2] / "data" / "sample_context.json").read_text(encoding="utf-8")
-    )
+    return IrrigationContext.model_validate_json((Path(__file__).parents[2] / "data" / "sample_context.json").read_text(encoding="utf-8"))
 
 
 def test_jev_request_success_and_invalid_choice(monkeypatch: pytest.MonkeyPatch) -> None:
