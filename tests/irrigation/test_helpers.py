@@ -1,5 +1,6 @@
 from datetime import datetime
 from types import SimpleNamespace
+from zoneinfo import ZoneInfo
 
 from irrigation.context import (
     WEATHER_ENTITY,
@@ -8,6 +9,7 @@ from irrigation.context import (
     _forecast_items,
     _future_prices,
     _get_forecast,
+    _normalize_datetime_string,
     _numeric_state,
     _weather_observations,
     _weather_values,
@@ -31,6 +33,12 @@ def test_context_helpers_handle_missing_values() -> None:
 
     assert _weather_values(None)["condition"] is None
     assert _weather_observations([[{"state": "cloudy", "attributes": "invalid"}]])[0]["temperature"] is None
+    assert _weather_observations(
+        [[{"last_changed": "2026-10-04T09:00:00+00:00", "state": "rainy", "attributes": {}}]],
+        ZoneInfo("Europe/Amsterdam"),
+    )[0]["observed_at"] == "2026-10-04T11:00:00+02:00"
+    assert _normalize_datetime_string("invalid", ZoneInfo("Europe/Amsterdam")) == "invalid"
+    assert _normalize_datetime_string("2026-10-04T11:00:00", ZoneInfo("Europe/Amsterdam")) == "2026-10-04T11:00:00+02:00"
 
 
 def test_forecast_and_price_helpers_filter_invalid_and_out_of_range_rows() -> None:
@@ -54,6 +62,14 @@ def test_forecast_and_price_helpers_filter_invalid_and_out_of_range_rows() -> No
     assert [item["temperature"] for item in items] == [None, 20]
     assert len(missing) == 2
     assert _forecast_items({}, now, [], 12) == []
+    normalized = _forecast_items(
+        {WEATHER_ENTITY: {"forecast": [{"datetime": "2026-10-04T11:00:00+00:00"}]}},
+        now,
+        [],
+        12,
+        ZoneInfo("Europe/Amsterdam"),
+    )
+    assert normalized[0]["datetime"] == "2026-10-04T13:00:00+02:00"
 
     forecast_missing: list[str] = []
     assert _get_forecast(
@@ -81,3 +97,23 @@ def test_forecast_and_price_helpers_filter_invalid_and_out_of_range_rows() -> No
     assert len(price_missing) == 2
     assert _future_prices(None, None, now, []) == []
     assert _future_prices(None, "sensor.price", now, [], state={"attributes": {}}) == []
+    normalized_prices = _future_prices(
+        None,
+        "sensor.price",
+        now,
+        [],
+        state={
+            "attributes": {
+                "prices": [
+                    {
+                        "from": "2026-10-04T11:00:00+00:00",
+                        "till": "2026-10-04T12:00:00+00:00",
+                        "price": 0.2,
+                    }
+                ]
+            }
+        },
+        target_timezone=ZoneInfo("Europe/Amsterdam"),
+    )
+    assert normalized_prices[0]["datetime"] == "2026-10-04T13:00:00+02:00"
+    assert normalized_prices[0]["valid_until"] == "2026-10-04T14:00:00+02:00"

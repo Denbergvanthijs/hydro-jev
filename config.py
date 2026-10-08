@@ -2,6 +2,7 @@
 
 from datetime import date
 from pathlib import Path
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -15,6 +16,7 @@ class Settings(BaseSettings):
     ha_url: str = "http://192.168.1.101"
     ha_token: str = ""
     typesafe_api_key: str = ""
+    timezone: str = "Europe/Amsterdam"
     lawn_sowing_date: date = date(2026, 9, 26)
     dry_run: bool = True
     ha_pump_power_entity_id: str = "sensor.athom_stekker_kantoor_power"
@@ -37,6 +39,15 @@ class Settings(BaseSettings):
     @classmethod
     def _strip_trailing_slash(cls, value: str) -> str:
         return value.rstrip("/")
+
+    @field_validator("timezone")
+    @classmethod
+    def _validate_timezone(cls, value: str) -> str:
+        try:
+            ZoneInfo(value)
+        except (TypeError, ZoneInfoNotFoundError) as error:
+            raise ValueError(f"Onbekende tijdzone: {value}") from error
+        return value
 
     @field_validator("ha_price_entity_id", "ha_price_forecast_entity_id", mode="before")
     @classmethod

@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel
 
@@ -16,17 +17,21 @@ class WateringSession(BaseModel):
     note: str | None = None
 
 
-def extract_watering_sessions(history: list[list[dict[str, Any]]], now: datetime) -> list[WateringSession]:
+def extract_watering_sessions(
+    history: list[list[dict[str, Any]]],
+    now: datetime,
+    target_timezone: ZoneInfo | None = None,
+) -> list[WateringSession]:
     """Extract completed and incomplete sessions from grouped history records."""
     records = [record for group in history for record in group]
-    records.sort(key=lambda record: _timestamp(record) or now)
+    records.sort(key=lambda record: _timestamp(record, target_timezone) or now)
     sessions: list[WateringSession] = []
     active_since: datetime | None = None
     pump_is_active = False
 
     for record in records:
         state = str(record.get("state", "")).lower()
-        changed_at = _timestamp(record)
+        changed_at = _timestamp(record, target_timezone)
         if state == "on" and not pump_is_active:
             pump_is_active = True
             active_since = changed_at
@@ -67,11 +72,16 @@ def extract_watering_sessions(history: list[list[dict[str, Any]]], now: datetime
     return sessions
 
 
-def _timestamp(record: dict[str, Any]) -> datetime | None:
+def _timestamp(record: dict[str, Any], target_timezone: ZoneInfo | None = None) -> datetime | None:
     value = record.get("last_changed")
     if not isinstance(value, str):
         return None
     try:
-        return datetime.fromisoformat(value)
+        timestamp = datetime.fromisoformat(value)
+        if target_timezone is None:
+            return timestamp
+        if timestamp.tzinfo is None:
+            return timestamp.replace(tzinfo=target_timezone)
+        return timestamp.astimezone(target_timezone)
     except ValueError:
         return None

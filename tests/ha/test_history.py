@@ -1,4 +1,5 @@
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from ha.history import _timestamp, extract_watering_sessions
 
@@ -59,3 +60,22 @@ def test_short_manual_session_is_kept_and_duration_rounded() -> None:
 
 def test_invalid_history_timestamp_is_ignored() -> None:
     assert _timestamp({"last_changed": "invalid"}) is None
+    assert _timestamp({"last_changed": "2026-10-04T11:00:00"}, ZoneInfo("Europe/Amsterdam")) == datetime.fromisoformat(
+        "2026-10-04T11:00:00+02:00"
+    )
+
+
+def test_history_timestamps_are_normalized_to_configured_timezone() -> None:
+    sessions = extract_watering_sessions(
+        [
+            [
+                {"state": "on", "last_changed": "2026-10-04T09:00:00+00:00"},
+                {"state": "off", "last_changed": "2026-10-04T09:05:00+00:00"},
+            ]
+        ],
+        datetime.fromisoformat("2026-10-04T12:00:00+02:00"),
+        ZoneInfo("Europe/Amsterdam"),
+    )
+
+    assert sessions[0].start_time == datetime.fromisoformat("2026-10-04T11:00:00+02:00")
+    assert sessions[0].end_time == datetime.fromisoformat("2026-10-04T11:05:00+02:00")

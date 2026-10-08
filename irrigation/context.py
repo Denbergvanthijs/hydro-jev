@@ -3,6 +3,7 @@
 import math
 from datetime import datetime, timedelta
 from typing import Any, Protocol
+from zoneinfo import ZoneInfo
 
 from config import Settings
 from ha.history import extract_watering_sessions
@@ -40,7 +41,8 @@ class HAReader(Protocol):
 
 def build_context(ha: HAReader, settings: Settings, now: datetime | None = None) -> IrrigationContext:
     """Fetch sensor data and assemble a normalized irrigation context."""
-    now = now or datetime.now().astimezone()
+    target_timezone = ZoneInfo(settings.timezone)
+    now = _normalize_datetime(now or datetime.now(target_timezone), target_timezone)
     start = now - timedelta(hours=settings.history_hours)
     missing: list[str] = []
 
@@ -48,7 +50,7 @@ def build_context(ha: HAReader, settings: Settings, now: datetime | None = None)
     weather_state = _read_state(ha, WEATHER_ENTITY, missing)
     history, _ = _read_history(ha, PUMP_ENTITY, start, now, missing)
     weather_history, _ = _read_history(ha, WEATHER_ENTITY, start, now, missing)
-    sessions = extract_watering_sessions(history, now)
+    sessions = extract_watering_sessions(history, now, target_timezone)
     stats: dict[str, float | None] = {}
     states: dict[str, dict[str, Any] | None] = {}
     state_entities = _state_entities(settings)
@@ -80,8 +82,8 @@ def build_context(ha: HAReader, settings: Settings, now: datetime | None = None)
 
     forecast = _get_forecast(ha, missing)
     current_weather = _weather_values(weather_state)
-    weather_observations = _weather_observations(weather_history)
-    forecast_items = _forecast_items(forecast, now, missing, settings.forecast_hours)
+    weather_observations = _weather_observations(weather_history, target_timezone)
+    forecast_items = _forecast_items(forecast, now, missing, settings.forecast_hours, target_timezone)
     current_price = None
     price_state = None
     if settings.ha_price_entity_id:
@@ -98,6 +100,7 @@ def build_context(ha: HAReader, settings: Settings, now: datetime | None = None)
         missing,
         state=future_price_state,
         forecast_hours=settings.forecast_hours,
+        target_timezone=target_timezone,
     )
     return IrrigationContext(
         observed_at=now.isoformat(),
@@ -201,7 +204,10 @@ def _weather_values(state: dict[str, Any] | None) -> dict[str, object | None]:
     }
 
 
-def _weather_observations(history: list[list[dict[str, Any]]]) -> list[dict[str, object | None]]:
+def _weather_observations(
+    history: list[list[dict[str, Any]]],
+    target_timezone: ZoneInfo | None = None,
+) -> list[dict[str, object | None]]:
     observations: list[dict[str, object | None]] = []
     for group in history:
         for record in group:
@@ -209,7 +215,7 @@ def _weather_observations(history: list[list[dict[str, Any]]]) -> list[dict[str,
             attributes = attributes if isinstance(attributes, dict) else {}
             observations.append(
                 {
-                    "observed_at": record.get("last_changed"),
+                    "observed_at": _normalize_datetime_string(record.get("last_changed"), target_timezone),
                     "condition": record.get("state"),
                     **{field: attributes.get(field) for field in WEATHER_FIELDS},
                 }
@@ -225,7 +231,13 @@ def _get_forecast(ha: HAReader, missing: list[str]) -> dict[str, Any]:
         return {}
 
 
-def _forecast_items(forecast: dict[str, Any], now: datetime, missing: list[str], forecast_hours: int) -> list[dict[str, object | None]]:
+def _forecast_items(
+    forecast: dict[str, Any],
+    now: datetime,
+    missing: list[str],
+    forecast_hours: int,
+    target_timezone: ZoneInfo | None = None,
+) -> list[dict[str, object | None]]:
     response = forecast.get("service_response", forecast)
     entity_data = response.get(WEATHER_ENTITY) if isinstance(response, dict) else None
     rows = entity_data.get("forecast") if isinstance(entity_data, dict) else None
@@ -247,7 +259,12 @@ def _forecast_items(forecast: dict[str, Any], now: datetime, missing: list[str],
             continue
         if forecast_at < now or forecast_at > limit:
             continue
-        result.append({field: row.get(field) for field in fields})
+        result.append(
+            {
+                field: _normalize_datetime_string(row.get(field), target_timezone) if field == "datetime" else row.get(field)
+                for field in fields
+            }
+        )
     return result
 
 
@@ -258,6 +275,7 @@ def _future_prices(
     missing: list[str],
     state: dict[str, Any] | None = None,
     forecast_hours: int = 12,
+    target_timezone: ZoneInfo | None = None,
 ) -> list[dict[str, object | None]]:
     if not entity_id:
         missing.append("HA_PRICE_FORECAST_ENTITY_ID (toekomstige elektriciteitsprijzen)")
@@ -285,8 +303,11 @@ def _future_prices(
                 continue
             result.append(
                 {
-                    "datetime": raw_datetime,
-                    "valid_until": value.get("till", value.get("end")),
+                    "datetime": _normalize_datetime_string(raw_datetime, target_timezone),
+                    "valid_until": _normalize_datetime_string(
+                        value.get("till", value.get("end")),
+                        target_timezone,
+                    ),
                     "price_eur_kwh": _round_optional(value.get("price", value.get("value")), 3),
                 }
             )
@@ -299,3 +320,21 @@ def _round_optional(value: Any, digits: int) -> float | None:
     except (TypeError, ValueError):
         return None
     return round(number, digits) if math.isfinite(number) else None
+
+
+def _normalize_datetime(value: datetime, target_timezone: ZoneInfo) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=target_timezone)
+    return value.astimezone(target_timezone)
+
+
+def _normalize_datetime_string(value: Any, target_timezone: ZoneInfo | None) -> Any:
+    if not isinstance(value, str):
+        return value
+    try:
+        timestamp = datetime.fromisoformat(value)
+    except ValueError:
+        return value
+    if target_timezone is None:
+        return value
+    return _normalize_datetime(timestamp, target_timezone).isoformat()
