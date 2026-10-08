@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from ha.history import extract_watering_sessions
+from ha.history import _timestamp, extract_watering_sessions
 
 
 def test_multiple_pump_cycles_become_sessions() -> None:
@@ -55,3 +55,7 @@ def test_short_manual_session_is_kept_and_duration_rounded() -> None:
     assert len(sessions) == 1
     assert sessions[0].duration_minutes == 0.36
     assert sessions[0].reliable
+
+
+def test_invalid_history_timestamp_is_ignored() -> None:
+    assert _timestamp({"last_changed": "invalid"}) is None

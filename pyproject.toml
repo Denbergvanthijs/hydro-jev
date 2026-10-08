@@ -6,6 +6,10 @@ python_files = ["test_*.py"]
 source = ["."]
 omit = ["tests/*"]
 
+[tool.coverage.report]
+exclude_lines = ["if __name__ == .__main__.:", "if TYPE_CHECKING:", "^\\s*\\.\\.\\.\\s*$"]
+fail_under = 100
+
 [tool.ruff]
 line-length = 140
 target-version = "py312"
