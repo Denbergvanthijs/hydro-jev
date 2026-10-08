@@ -1,6 +1,7 @@
 """Application settings loaded from environment variables."""
 
 from datetime import date
+from pathlib import Path
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -24,6 +25,7 @@ class Settings(BaseSettings):
     ha_watering_minutes_week_entity_id: str = "sensor.hydrofoor_inschakelduur_deze_week"
     ha_energy_kwh_today_entity_id: str = "sensor.hydrofoor_verbruik_vandaag"
     ha_energy_kwh_week_entity_id: str = "sensor.hydrofoor_verbruik_deze_week"
+    sample_context_path: Path = Path(__file__).parent / "data" / "sample_context.json"
     ha_price_entity_id: str | None = None
     ha_price_forecast_entity_id: str | None = None
     max_minutes_per_day: int = 20

@@ -50,13 +50,14 @@ def test_sample_runner_loads_json_without_creating_ha_client(monkeypatch, capsys
 
 
 def test_home_assistant_runner_uses_ha_context_builder(monkeypatch, capsys) -> None:
-    sample_context = IrrigationContext.model_validate_json(hydro_main.DEFAULT_SAMPLE_PATH.read_text(encoding="utf-8"))
+    settings = _settings(ha_token="test-ha-token")
+    sample_context = IrrigationContext.model_validate_json(settings.sample_context_path.read_text(encoding="utf-8"))
     expected_client = object()
     monkeypatch.setattr(hydro_main, "HomeAssistantClient", lambda *_args: expected_client)
     monkeypatch.setattr(hydro_main, "build_context", _context_builder_for(expected_client, sample_context))
     monkeypatch.setattr(hydro_main, "request_decision", _no_water_decision)
 
-    result = hydro_main.run_with_home_assistant(settings=_settings(ha_token="test-ha-token"))
+    result = hydro_main.run_with_home_assistant(settings=settings)
     output = json.loads(capsys.readouterr().out)
 
     assert result.context is sample_context

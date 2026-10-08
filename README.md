@@ -45,6 +45,7 @@ HA_TODAY_WATERING_MINUTES_ENTITY_ID=sensor.hydrofoor_inschakelduur_vandaag
 HA_WATERING_MINUTES_WEEK_ENTITY_ID=sensor.hydrofoor_inschakelduur_deze_week
 HA_ENERGY_KWH_TODAY_ENTITY_ID=sensor.hydrofoor_verbruik_vandaag
 HA_ENERGY_KWH_WEEK_ENTITY_ID=sensor.hydrofoor_verbruik_deze_week
+SAMPLE_CONTEXT_PATH=data\sample_context.json
 ```
 
 De projectbeschrijving bevat geen entity-ID’s voor elektriciteitsprijzen. Als je die in HA hebt, configureer ze in `.env`:

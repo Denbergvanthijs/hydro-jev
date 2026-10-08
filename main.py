@@ -18,7 +18,6 @@ from jev.models import IrrigationContext
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("hydro_jev")
-DEFAULT_SAMPLE_PATH = Path(__file__).parent / "data" / "sample_context.json"
 
 
 @dataclass(frozen=True)
@@ -59,7 +58,7 @@ def run_with_home_assistant(settings: Settings | None = None) -> RunResult:
 
 
 def run_with_sample_json(
-    sample_path: Path = DEFAULT_SAMPLE_PATH,
+    sample_path: Path | None = None,
     settings: Settings | None = None,
 ) -> RunResult:
     """Load a saved context JSON file, then run the shared decision pipeline."""
@@ -67,6 +66,7 @@ def run_with_sample_json(
     with _log_step("configuratie laden"):
         settings = settings or Settings()
     _require_typesafe_key(settings)
+    sample_path = sample_path or settings.sample_context_path
     with _log_step(f"sample-context laden: {sample_path}"):
         context = IrrigationContext.model_validate_json(sample_path.read_text(encoding="utf-8"))
     return run_context(context, settings, source="sample_json", run_started=run_started)
@@ -132,7 +132,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     """Parse command-line arguments and run the selected input pipeline."""
     parser = argparse.ArgumentParser(description="Run hydro-jev using HA or saved sample context.")
     parser.add_argument("--source", choices=("ha", "sample"), default="ha")
-    parser.add_argument("--sample-file", type=Path, default=DEFAULT_SAMPLE_PATH)
+    parser.add_argument("--sample-file", type=Path)
     args = parser.parse_args(argv)
 
     logger.info("Hydro-Jev gestart")
